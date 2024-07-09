@@ -1,5 +1,5 @@
 import Data.List
-import Text.Printf (errorBadArgument)
+
 
 -- Type definition
 
@@ -96,7 +96,7 @@ desc label =
         Split id         -> [Just id, Nothing]  -- need info from the contract (number of sub-contracts and coins division)
         PutReveal _ _ id -> [Just id]
         WithDraw _ _ id  -> [Just id]
-        _                -> errorBadArgument    -- error
+        _                -> error "desc: wrong label! Only Split / PutReveal / WithDraw"    -- error
 
 
 {- inRun: check if a label in a run
