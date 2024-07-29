@@ -9,12 +9,8 @@ newtype Money = BCoins Int deriving (Eq, Show)
 
 newtype Secret = Secret String deriving (Eq, Show)     -- Secrect SName
 
-newtype Time = Time Int deriving (Show)   -- timeout
+newtype Time = Time Int deriving (Eq, Show)   -- timeout
 
-
--- instance for Eq, Ord type classes for Time
-instance Eq Time where
-    (Time t1) == (Time t2) = t1 == t2
 
 instance Ord Time where
     compare (Time t1) (Time t2) = compare t1 t2
@@ -42,6 +38,14 @@ data E  = EInt Integer
     deriving (Eq, Ord, Show)
 
 
+data Condition = Check Time | Pred      -- Condition will be used in strategy                                    
+
 -- Get the length of a secrect
 getSLen :: Secret -> E
 getSLen (Secret sName) = ELength sName
+
+-- main = do
+--     let t1 = Time 10
+--     let t2 = Time 5
+--     print $ max t1 t2
+--     print "Common.hs"
