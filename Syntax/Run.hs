@@ -4,7 +4,6 @@ Description : Defines BitML run, config-objects and configuration
 -}
 
 module Syntax.Run where
-
 import Syntax.Label (Label)
 import Syntax.Common ( Secret, Money, Participant, ID, Time )
 import Syntax.Contract (Contract, GuardedContract)
