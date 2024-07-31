@@ -5,7 +5,7 @@ import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (
 import NewSet ( NewSet (..), filterSet, unionSet, mapSetList, negationSet, insertList )
 import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
-import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..))
+import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (CheckTimeOut))
 import Data.Maybe (mapMaybe)       -- map, but only keep values of 'Just' in a list
 
 {- CV function in BitML paper. Extract the ID in a label.
@@ -86,6 +86,12 @@ eval (Combination as1 as2) = \run ->
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
+eval (IfThenElse CheckTimeOut t as1 as2) = 
+    \run -> let cs1 = eval as1 in
+        let cs2 = eval as2 in
+            let now = getCurrentTime run in 
+                if t < now then as1 else as2
+
 
 
 

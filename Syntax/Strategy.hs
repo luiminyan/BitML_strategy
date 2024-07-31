@@ -1,5 +1,5 @@
 module Syntax.Strategy where
-import Syntax.Common (Time(..), ID, Pred, Condition, subTime)
+import Syntax.Common (Time(..), ID, Pred, subTime)
 import Syntax.Label (Label)
 import Syntax.Run (Run(..), InitConfiguration (..))
 import NewSet (NewSet (UnordSet))
@@ -7,6 +7,8 @@ import NewSet (NewSet (UnordSet))
 
 data Operator = Operator    -- A place holder for operator
 
+
+data Condition = CheckTimeOut Time | Pred      -- Condition will be used in strategy    
 
 data AbstractStrategy =
     Do Label
