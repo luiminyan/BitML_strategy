@@ -33,11 +33,11 @@ greedyActionsCombination s1 s2 =
 
 
 
--- -- get current time from run
--- getCurrentTime :: Run -> Time
--- getCurrentTime (Run (InitConfig, [])) = Time 0      -- init time = time 0
--- getCurrentTime (Run (_, [(_, _, t)])) = t
--- getCurrentTime (Run (_, x : xs)) = getCurrentTime (Run (InitConfig, xs))
+-- get current time from run
+getCurrentTime :: Run -> Time
+getCurrentTime (Run (InitConfig, [])) = Time 0      -- init time = time 0
+getCurrentTime (Run (_, [(_, _, t)])) = t
+getCurrentTime (Run (_, x : xs)) = getCurrentTime (Run (InitConfig, xs))
 
 
 
@@ -74,10 +74,10 @@ greedyActionsCombination s1 s2 =
 eval :: AbstractStrategy -> ConcreteStrategy
 eval (Do label) = \_ -> Actions $ UnordSet [label]
 -- eval DoNothing = Delay . minTimeRun
--- eval (WaitUntil (Time d)) =
---     \run -> let now = getCurrentTime run in
---         if now < Time d then Delay $ subTime (Time d) now
---         else error "Invalid strategy: time to wait already past"
+eval (WaitUntil (Time d)) =
+    \run -> let now = getCurrentTime run in
+        if now < Time d then Delay $ subTime (Time d) now
+        else error "Invalid strategy: time to wait already past"
 eval (Combination as1 as2) = \run ->
     let sr1 = eval as1 run in               -- cs1 run = sr1
         let sr2 = eval as2 run in
