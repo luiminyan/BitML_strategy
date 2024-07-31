@@ -8,28 +8,28 @@ import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
 import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..))
 import Data.Maybe (mapMaybe)       -- map, but only keep values of 'Just' in a list
 
--- {- CV function in BitML paper. Extract the ID in a label.
---     If label = Split / Withdraw / Put, return [id]
---     else return Nothing (in paper: an empty set)
--- -}
--- cv :: Label -> Maybe [ID]
--- cv l =
---     case l of
---         LSplit id -> Just [id]
---         LPutReveal _ _ _ id -> Just [id]
---         LWithDraw _ _ id -> Just [id]
---         _ -> Nothing
+{- CV function in BitML paper. Extract the ID in a label.
+    If label = Split / Withdraw / Put, return [id]
+    else return Nothing (in paper: an empty set)
+-}
+cv :: Label -> Maybe [ID]
+cv l =
+    case l of
+        LSplit id -> Just [id]
+        LPutReveal _ _ _ id -> Just [id]
+        LWithDraw _ _ id -> Just [id]
+        _ -> Nothing
 
 
 
--- -- greedyCombination of two Strategy Result Actions list
--- greedyActionsCombination :: NewSet Label -> NewSet Label -> NewSet Label
--- greedyActionsCombination s1 s2 =
---         let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
---         let s2_empty = filterSet (\label -> (cv label) == Nothing) s2 in                                -- cv(label') = empty
---             let s2_not_empty = negationSet s2 s2_empty in                                               -- cv(label') = not empty
---                 let s2_unique = filterSet (\label -> notElem (cv label) s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
---         unionSet s1 (unionSet s2_empty s2_unique)
+-- greedyCombination of two Strategy Result Actions list
+greedyActionsCombination :: NewSet Label -> NewSet Label -> NewSet Label
+greedyActionsCombination s1 s2 =
+        let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
+        let s2_empty = filterSet (\label -> (cv label) == Nothing) s2 in                                -- cv(label') = empty
+            let s2_not_empty = negationSet s2 s2_empty in                                               -- cv(label') = not empty
+                let s2_unique = filterSet (\label -> notElem (cv label) s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
+        unionSet s1 (unionSet s2_empty s2_unique)
 
 
 
@@ -78,14 +78,14 @@ eval (Do label) = \_ -> Actions $ UnordSet [label]
 --     \run -> let now = getCurrentTime run in
 --         if now < Time d then Delay $ subTime (Time d) now
 --         else error "Invalid strategy: time to wait already past"
--- eval (Combination as1 as2) = \run ->
---     let sr1 = eval as1 run in               -- cs1 run = sr1
---         let sr2 = eval as2 run in
---             case (sr1, sr2) of
---                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
---                 (Delay t1, as2)             -> as2
---                 (as1, Delay t2)             -> as1
---                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
+eval (Combination as1 as2) = \run ->
+    let sr1 = eval as1 run in               -- cs1 run = sr1
+        let sr2 = eval as2 run in
+            case (sr1, sr2) of
+                (Delay t1, Delay t2)        -> Delay $ min t1 t2
+                (Delay t1, as2)             -> as2
+                (as1, Delay t2)             -> as1
+                (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
 
 
 
