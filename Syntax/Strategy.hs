@@ -1,26 +1,25 @@
 module Syntax.Strategy where
-import Syntax.Common (Time, ID, Pred, Condition)
+import Syntax.Common (Time(..), ID, Pred, Condition, subTime)
 import Syntax.Label (Label)
-import Syntax.Run (Run(..))
-import NewSet (NewSet)
+import Syntax.Run (Run(..), InitConfiguration (..))
+import NewSet (NewSet (UnordSet))
+
 
 data Operator = Operator    -- A place holder for operator
 
 
-
-data AbstractStrategy = 
-    Do Label 
+data AbstractStrategy =
+    Do Label
     | DoNothing
     | WaitUntil Time
-    | Combination Operator AbstractStrategy AbstractStrategy
-    | ExecutedThenElse Label AbstractStrategy AbstractStrategy  
+    | Combination AbstractStrategy AbstractStrategy         -- TODO: add Operator
+    | ExecutedThenElse Label AbstractStrategy AbstractStrategy
     | IfThenElse Condition AbstractStrategy AbstractStrategy        -- Condition: check Time | Pred
-    
 
 
 -- Result of a strategy on a given run
-data StrategyResult = 
-    Action (NewSet Label)       -- | Action NewSet [Label]
+data StrategyResult =
+    Actions (NewSet Label)       -- Action NewSet [Label]
     | Delay Time
 
 
@@ -29,9 +28,3 @@ type ConcreteStrategy = Run -> StrategyResult
 
 
 
--- -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
--- eval :: AbstractStrategy -> ConcreteStrategy
--- eval IfThenElse p as1 as2 =
---     case p of
---         | 
-        
