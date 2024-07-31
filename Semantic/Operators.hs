@@ -73,7 +73,7 @@ minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
 eval :: AbstractStrategy -> ConcreteStrategy
 eval (Do label) = \_ -> Actions $ UnordSet [label]
--- eval DoNothing = Delay . minTimeRun
+eval DoNothing = Delay . minTimeRun         -- DoNothing = dealy minimum time from active contract(s) in run
 eval (WaitUntil (Time d)) =
     \run -> let now = getCurrentTime run in
         if now < Time d then Delay $ subTime (Time d) now
