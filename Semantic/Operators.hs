@@ -41,32 +41,32 @@ getCurrentTime (Run (_, x : xs)) = getCurrentTime (Run (InitConfig, xs))
 
 
 
--- -- minimum time from a contract
--- minTimeC :: Contract -> Time
--- minTimeC [] = error "minTimeC: empty contract!"
--- minTimeC gContracts = minimum $ map minTimeG gContracts
+-- minimum time from a contract
+minTimeC :: Contract -> Time
+minTimeC [] = error "minTimeC: empty contract!"
+minTimeC gContracts = minimum $ map minTimeG gContracts
 
 
 
--- -- minimum time from a guarded contract
--- minTimeG :: GuardedContract -> Time
--- minTimeG (PutReveal _ _ _ contract) = minTimeC contract         -- minimum time of contract
--- minTimeG (Withdraw _) = TerminationTime                         -- withdraw terminates the active contract
--- minTimeG (Split []) = error "minTimeG: invalid contract, empty split"
--- minTimeG (Split sList) = minimum $ map (minTimeC . snd) sList   -- minimum time of all splitted contratcs
--- minTimeG (Auth _ gc) = minTimeG gc
--- minTimeG (After t gc)
---     | t >= minTimeG gc = minTimeG gc
---     | otherwise = t
+-- minimum time from a guarded contract
+minTimeG :: GuardedContract -> Time
+minTimeG (PutReveal _ _ _ contract) = minTimeC contract         -- minimum time of contract
+minTimeG (Withdraw _) = TerminationTime                         -- withdraw terminates the active contract
+minTimeG (Split []) = error "minTimeG: invalid contract, empty split"
+minTimeG (Split sList) = minimum $ map (minTimeC . snd) sList   -- minimum time of all splitted contratcs
+minTimeG (Auth _ gc) = minTimeG gc
+minTimeG (After t gc)
+    | t >= minTimeG gc = minTimeG gc
+    | otherwise = t
 
 
--- -- minimum time in a run
--- minTimeRun :: Run -> Time
--- minTimeRun (Run (InitConfig, [(_, configList, _)])) =                                                     -- last tuple in the run
---     let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in          -- configObj list with only active contracts
---         let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in   -- list of contracts from each active contract
---         minimum $ map minTimeC contractList                                                         -- the minimum time in all contracts
--- minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
+-- minimum time in a run
+minTimeRun :: Run -> Time
+minTimeRun (Run (InitConfig, [(_, configList, _)])) =                                                     -- last tuple in the run
+    let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in          -- configObj list with only active contracts
+        let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in   -- list of contracts from each active contract
+        minimum $ map minTimeC contractList                                                         -- the minimum time in all contracts
+minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 
 
 
