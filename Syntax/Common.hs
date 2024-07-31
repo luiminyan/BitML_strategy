@@ -26,12 +26,18 @@ instance Ord Time where
 
 -- time subtraction
 subTime :: Time -> Time -> Time
-subTime TerminationTime _ = error "Invalid subtraction: infinite!"
+subTime TerminationTime _ = error "Invalid time subtraction: termination!"
 subTime (Time t1) time2 =
     if Time t1 < time2 then error "Invalid time substraction: negative time"
     else
         case time2 of
             (Time t2) -> Time $ t1 - t2
+
+
+addTime :: Time -> Time -> Time
+addTime TerminationTime _ = error "Invalid time addition: termination!"
+addTime _ TerminationTime = error "Invalid time addition: termination!"
+addTime (Time t1) (Time t2) = Time (t1 + t2)
 
 
 
