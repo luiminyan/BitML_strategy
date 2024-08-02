@@ -34,12 +34,12 @@ subTime (Time t1) time2 =
             (Time t2) -> Time $ t1 - t2
 
 
-addTime :: Time -> Time -> Time
-addTime TerminationTime _ = error "Invalid time addition: termination!"
-addTime _ TerminationTime = error "Invalid time addition: termination!"
-addTime (Time t1) (Time t2) = Time (t1 + t2)
+-- addTime :: Time -> Time -> Time
+-- addTime TerminationTime _ = error "Invalid time addition: termination!"
+-- addTime _ TerminationTime = error "Invalid time addition: termination!"
+-- addTime (Time t1) (Time t2) = Time (t1 + t2)
 
-
+data Condition = CheckTimeOut Time | Predicate Pred      -- Condition will be used in strategy  
 
 -- Logical predicates
 data Pred =
@@ -51,19 +51,16 @@ data Pred =
     | PNeq E E
     | PBtwn E E E
     | PLt E E
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Show)
 
 
 -- Arithmetic expressions for logical predicates.
 data E  = EInt Integer
     -- Length of a secret.
-    | ELength String
+    | ELength Secret
     | EAdd E E
     | ESub E E
-    deriving (Eq, Ord, Show)
-
-
-data Condition = Check Time | Pred      -- Condition will be used in strategy                                    
+    deriving (Eq, Show)                                
 
 
 -- -- Get the length of a secrect
