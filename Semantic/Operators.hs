@@ -15,8 +15,8 @@ import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult 
 cv :: Label -> Maybe [ID]
 cv l =
     case l of
-        LSplit id -> Just [id]
-        LPutReveal _ _ _ id -> Just [id]
+        LSplit id _ -> Just [id]
+        LPutReveal _ _ _ id _ -> Just [id]
         LWithDraw _ _ id -> Just [id]
         _ -> Nothing
 
