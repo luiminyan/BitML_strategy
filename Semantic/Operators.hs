@@ -1,12 +1,12 @@
 module Semantic.Operators where
 
 import Syntax.Label
-import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), subTime, addTime)
-import NewSet ( NewSet (..), filterSet, unionSet, mapSetList, negationSet, insertList )
+import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), Condition (..), subTime)
+import NewSet 
 import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
-import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (CheckTimeOut))
-import Data.Maybe (mapMaybe)       -- map, but only keep values of 'Just' in a list
+import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..))
+
 
 {- CV function in BitML paper. Extract the ID in a label.
     If label = Split / Withdraw / Put, return [id]
@@ -86,17 +86,30 @@ eval (Combination as1 as2) = \run ->
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
-eval (IfThenElse CheckTimeOut t as1 as2) = 
-    \run -> let cs1 = eval as1 in
-        let cs2 = eval as2 in
-            let now = getCurrentTime run in 
-                if t < now then as1 else as2
+eval (IfThenElse (CheckTimeOut t) as1 as2) =
+    \run -> let cs1 = eval as1 run in
+        let cs2 = eval as2 run in
+            let now = getCurrentTime run in
+                if t < now then cs1 else cs2
+
+eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
+
 
 
 
 
 main = do
+    -- test cv
+    let l1 = LWithDraw (Participant "A") (BCoins 1) (ID "x1")
+    let l2 = LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))
+    let l3 = LSplit (ID "x1")
+    print $ cv l1       -- Just [ID "x1"]
+    print $ cv l2       -- Nothing
+
+    -- test greedyActionsCombination
     let s1 = insertList EmptySet [LWithDraw (Participant "A") (BCoins 1) (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))]
     let s4 = insertList EmptySet [LSplit (ID "x1"), LPutReveal [] [] PTrue (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
     print "Operations.hs"
     print $ greedyActionsCombination s1 s4
+
+
