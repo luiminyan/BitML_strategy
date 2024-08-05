@@ -15,7 +15,7 @@ module NewSet (
     , filterSet
 ) where
 
-import Syntax.Label (Label(LWithDraw, LSplit, LPutReveal))
+import Syntax.Label (Label(LWithdraw, LSplit, LPutReveal))
 import Syntax.Common (Participant(Participant), ID (ID), Pred (PTrue))
 
 data NewSet a = EmptySet | UnordSet [a] deriving (Show)

@@ -1,5 +1,4 @@
 module Semantic.Operators where
-
 import Syntax.Label
 import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), subTime)
 import NewSet
@@ -17,7 +16,7 @@ cv l =
     case l of
         LSplit id _ -> Just [id]
         LPutReveal _ _ _ id _ -> Just [id]
-        LWithDraw _ _ id -> Just [id]
+        LWithdraw _ _ id -> Just [id]
         _ -> Nothing
 
 
@@ -69,6 +68,8 @@ minTimeRun (Run (InitConfig, [(_, configList, _)])) =                           
 minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 
 
+-- TODO: update
+
 
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
 eval :: AbstractStrategy -> ConcreteStrategy
@@ -92,6 +93,7 @@ eval (IfThenElse (CheckTimeOut t) as1 as2) =
             let now = getCurrentTime run in
                 if t < now then cs1 else cs2
 
+-- TODO: finish if-else-then predicate
 eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
 
 
@@ -100,7 +102,7 @@ eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
 
 main = do
     -- test cv
-    let l1 = LWithDraw (Participant "A") (BCoins 1) (ID "x1")
+    let l1 = LWithdraw (Participant "A") (BCoins 1) (ID "x1")
     let l2 = LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))
     let l3 = LSplit (ID "x1")
     print $ cv l1       -- Just [ID "x1"]
