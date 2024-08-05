@@ -1,11 +1,11 @@
 module Semantic.Operators where
 
 import Syntax.Label
-import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), Condition (..), subTime)
-import NewSet 
+import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), subTime)
+import NewSet
 import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
-import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..))
+import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
 
 
 {- CV function in BitML paper. Extract the ID in a label.
@@ -26,9 +26,9 @@ cv l =
 greedyActionsCombination :: NewSet Label -> NewSet Label -> NewSet Label
 greedyActionsCombination s1 s2 =
         let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
-        let s2_empty = filterSet (\label -> (cv label) == Nothing) s2 in                                -- cv(label') = empty
+        let s2_empty = filterSet (\label -> cv label == Nothing) s2 in                                  -- cv(label') = empty
             let s2_not_empty = negationSet s2 s2_empty in                                               -- cv(label') = not empty
-                let s2_unique = filterSet (\label -> notElem (cv label) s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
+                let s2_unique = filterSet (\label -> cv label `notElem` s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
         unionSet s1 (unionSet s2_empty s2_unique)
 
 
@@ -107,9 +107,9 @@ main = do
     print $ cv l2       -- Nothing
 
     -- test greedyActionsCombination
-    let s1 = insertList EmptySet [LWithDraw (Participant "A") (BCoins 1) (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))]
-    let s4 = insertList EmptySet [LSplit (ID "x1"), LPutReveal [] [] PTrue (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
-    print "Operations.hs"
-    print $ greedyActionsCombination s1 s4
+    -- let s1 = insertList EmptySet [LWithDraw (Participant "A") (BCoins 1) (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))]
+    -- let s4 = insertList EmptySet [LSplit (ID "x1"), LPutReveal [] [] PTrue (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
+    -- print "Operations.hs"
+    -- print $ greedyActionsCombination s1 s4
 
 

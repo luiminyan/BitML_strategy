@@ -39,7 +39,6 @@ subTime (Time t1) time2 =
 -- addTime _ TerminationTime = error "Invalid time addition: termination!"
 -- addTime (Time t1) (Time t2) = Time (t1 + t2)
 
-data Condition = CheckTimeOut Time | Predicate Pred      -- Condition will be used in strategy  
 
 -- Logical predicates
 data Pred =
@@ -56,7 +55,7 @@ data Pred =
 
 -- Arithmetic expressions for logical predicates.
 data E  = EInt Integer
-    -- Length of a secret.
+    -- Length of a secret, different from BitMLx 
     | ELength Secret
     | EAdd E E
     | ESub E E
