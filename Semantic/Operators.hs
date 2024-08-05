@@ -1,6 +1,6 @@
 module Semantic.Operators where
 import Syntax.Label
-import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), subTime)
+import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime)
 import NewSet
 import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
@@ -42,7 +42,7 @@ getCurrentTime (Run (_, x : xs)) = getCurrentTime (Run (InitConfig, xs))
 
 -- minimum time from a contract
 minTimeC :: Contract -> Time
-minTimeC [] = error "minTimeC: empty contract!"
+minTimeC [] = TerminationTime           -- The minimum of nothing is infinite!
 minTimeC gContracts = minimum $ map minTimeG gContracts
 
 
@@ -59,34 +59,64 @@ minTimeG (After t gc)
     | otherwise = t
 
 
--- minimum time in a run
+-- minimum time from active contracts in run
 minTimeRun :: Run -> Time
-minTimeRun (Run (InitConfig, [(_, configList, _)])) =                                                     -- last tuple in the run
-    let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in          -- configObj list with only active contracts
-        let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in   -- list of contracts from each active contract
-        minimum $ map minTimeC contractList                                                         -- the minimum time in all contracts
+minTimeRun (Run (InitConfig, [])) = TerminationTime           -- The minimum of nothing is infinite!
+minTimeRun (Run (InitConfig, [(_, configList, _)])) =                                               -- last tuple in the run
+    let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in              -- configObj list with only active contracts
+        let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in       -- list of contracts from each active contract
+        minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
 minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 
 
--- TODO: update
+
+
+{- get the length of a secret
+    if secret revealed: Just sLen
+    else:               Nothing    
+-}
+
+getSecLen :: Secret -> Run -> Maybe Int
+getSecLen _ (Run (InitConfig, [])) = Nothing
+getSecLen s (Run (InitConfig, [(_, confList, _)])) = 
+    let revSecList = foldl (\acc (RevealedSecrect _ secret sLen) -> (secret, sLen) : acc) [] confList in
+        case revSecList of
+            [] -> Nothing
+            (sec, len) : xs -> if sec == s then Just len else Nothing
+
+    
+
+
+
+{- TODO for eval
+    1. update eval with 'env'
+    2. update 'do label' with 'lookup id Env'
+        2.1 use cv function to extract 'id'
+    3. write variable compare
+    4. finish IfElseThen predicate
+-}
 
 
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
 eval :: AbstractStrategy -> ConcreteStrategy
 eval (Do label) = \_ -> Actions $ UnordSet [label]
-eval DoNothing = Delay . minTimeRun         -- DoNothing = dealy minimum time from active contract(s) in run
+
+eval DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+
 eval (WaitUntil (Time d)) =
     \run -> let now = getCurrentTime run in
         if now < Time d then Delay $ subTime (Time d) now
         else error "Invalid strategy: time to wait already past"
+
 eval (Combination as1 as2) = \run ->
-    let sr1 = eval as1 run in               -- cs1 run = sr1
-        let sr2 = eval as2 run in
-            case (sr1, sr2) of
+    let cs1 = eval as1 in               -- cs1 run = sr1
+        let cs2 = eval as2 in
+            case (cs1 run, cs2 run) of
                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
+
 eval (IfThenElse (CheckTimeOut t) as1 as2) =
     \run -> let cs1 = eval as1 run in
         let cs2 = eval as2 run in
@@ -95,6 +125,8 @@ eval (IfThenElse (CheckTimeOut t) as1 as2) =
 
 -- TODO: finish if-else-then predicate
 eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
+
+
 
 
 
@@ -113,5 +145,8 @@ main = do
     -- let s4 = insertList EmptySet [LSplit (ID "x1"), LPutReveal [] [] PTrue (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
     -- print "Operations.hs"
     -- print $ greedyActionsCombination s1 s4
+
+
+    -- TODO: test minTimeRun
 
 
