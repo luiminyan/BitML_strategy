@@ -1,7 +1,7 @@
 module Syntax.Common where
 
 
-newtype ID = ID String deriving (Eq, Show)      -- Active contract / Deposite ID
+newtype ID = ID String deriving (Ord, Eq, Show)      -- Active contract / Deposite ID
 
 newtype Participant = Participant String deriving (Show, Eq)  -- participants: A, B, C, D ...
 
