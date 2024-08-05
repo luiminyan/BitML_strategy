@@ -3,7 +3,18 @@ Module      : NewSet
 Description : A customized set, which includes no duplicate      
 -}
 
-module NewSet where
+module NewSet (
+    NewSet (..)
+    , elemSet
+    , insertElem
+    , insertList
+    , unionSet
+    , negationSet
+    , mapSet
+    , mapSetList
+    , filterSet
+) where
+
 import Syntax.Label (Label(LWithDraw, LSplit, LPutReveal))
 import Syntax.Common (Participant(Participant), ID (ID), Pred (PTrue))
 
@@ -26,7 +37,7 @@ insertElem (UnordSet as) a
 
 -- insert a list into a set
 insertList :: (Eq a) => NewSet a -> [a] -> NewSet a
-insertList= foldl insertElem 
+insertList= foldl insertElem
 
 
 -- union function (all elements from both sets)
@@ -39,7 +50,7 @@ unionSet s1 (UnordSet as2) = foldl insertElem s1 as2   -- insert elem from new s
 -- negation: s1 - s2
 negationSet EmptySet _ = EmptySet
 negationSet s1 EmptySet = s1
-negationSet (UnordSet s1) s2 = foldl (\acc x -> if elemSet s2 x then acc else insertElem acc x) EmptySet s1 
+negationSet (UnordSet s1) s2 = foldl (\acc x -> if elemSet s2 x then acc else insertElem acc x) EmptySet s1
 
 
 -- map function for NewSet
@@ -57,14 +68,19 @@ mapSetList f (UnordSet l) = map f l
 -- filter function on NewSet
 filterSet :: Eq a => (a -> Bool) -> NewSet a -> NewSet a
 filterSet _ EmptySet = EmptySet
-filterSet f (UnordSet s) = foldl (\acc x -> if f x then insertElem acc x else acc) EmptySet s  
+filterSet f (UnordSet s) = foldl (\acc x -> if f x then insertElem acc x else acc) EmptySet s
 
 
 main = do
     let s1 = insertElem (UnordSet [1]) 2                         -- UnordSet [1, 2]
     let s2 = insertElem (insertElem EmptySet "Apple") "Banana"       -- UnordSet ["Apple", "Banana"]
-    let s3 = insertList EmptySet [2, 3, 1, 4]       
-    let s4 = filterSet even s3      -- UnordSet [2, 4]
-    
-    print $ unionSet s1 s3 
-    print s4        
+    let s3 = insertList EmptySet [2, 4, 1, 3]
+
+    print $ unionSet s1 s3          -- UnordSet [1, 2, 4, 3]
+    print $ negationSet s3 s1       -- UnordSet [4, 3]
+    print $ filterSet even s3       -- UnordSet [2, 4]   
+    print $ filterSet (==5) s3      -- EmptySet
+    print $ mapSet (*2) s1
+    print $ mapSetList (*2) s1
+    print $ filterSet (==1) s3
+    print $ filterSet (==0) s3
