@@ -1,5 +1,5 @@
 module Syntax.Strategy where
-import Syntax.Common (Time(..), ID, Pred, subTime)
+import Syntax.Common (Time(..), ID, Pred, subTime, VarID, ConcID)
 import Syntax.Label (Label)
 import Syntax.Run (Run(..), InitConfiguration (..))
 import NewSet 
@@ -12,18 +12,21 @@ data Condition = CheckTimeOut Time | Predicate Pred      -- Condition will be us
 
 
 data AbstractStrategy =
-    Do Label
+    Do (Label ID)           -- ID will be evaluated (CID | VID)
     | DoNothing
     | WaitUntil Time
     | Combination AbstractStrategy AbstractStrategy         -- TODO: add Operator
-    | ExecutedThenElse Label AbstractStrategy AbstractStrategy
+    | SuccThenElse (Label ConcID) [VarID] AbstractStrategy AbstractStrategy   -- (Label ConcID) -> [VarID]
     | IfThenElse Condition AbstractStrategy AbstractStrategy        -- Condition: check Time | Pred
 
 
 -- Result of a strategy on a given run
 data StrategyResult =
-    Actions (NewSet Label)       -- Action NewSet [Label]
+    Actions (NewSet (Label ConcID))       -- Action NewSet [Label ConID]
     | Delay Time
+
+
+-- newtype EvalFailure String = IOError String 
 
 
 -- CS: functions (Run -> StrategyResult)

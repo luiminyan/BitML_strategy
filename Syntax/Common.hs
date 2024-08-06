@@ -1,7 +1,16 @@
 module Syntax.Common where
 
 
-newtype ID = ID String deriving (Ord, Eq, Show)      -- Active contract / Deposite ID
+newtype ConcID = ConcID String deriving (Ord, Eq, Show)     -- ConcreteID: should exist in run
+newtype VarID = VarID String deriving (Ord, Eq, Show)       -- VariableID: possible ID, need to be resolved
+data ID = CID ConcID | VID VarID deriving (Eq, Show)   -- active contract ID | deposit ID
+
+instance Ord ID where
+    compare (CID (ConcID id1)) (VID (VarID id2)) = compare id1 id2 
+    compare (VID (VarID id1)) (CID (ConcID id2)) = compare id1 id2
+    compare (CID id1) (CID id2) = compare id1 id2
+    compare (VID id1) (VID id2) = compare id1 id2
+
 
 newtype Participant = Participant String deriving (Show, Eq)  -- participants: A, B, C, D ...
 
@@ -62,12 +71,7 @@ data E  = EInt Integer
     deriving (Eq, Show)                                
 
 
--- -- Get the length of a secrect
--- getSLen :: Secret -> E
--- getSLen (Secret sName) = ELength sName
-
-
--- main = do
+main = do
 --     let t1 = Time 10
 --     let t2 = Time 5
 --     let t3 = TerminationTime
@@ -78,4 +82,6 @@ data E  = EInt Integer
 --     print $ max t1 t1              -- Time 10
 --     print $ max t2 t1              -- Time 10
 --     print $ max t1 t3              -- TerminationTime
---     print "Common.hs"
+    let id1 = VID $ VarID "a"
+    let id2 = CID $ ConcID "b"
+    print $ compare id1 id2

@@ -1,10 +1,10 @@
 module Semantic.Environment (
-    Env
+    Environment
     , lookupEnv
     , updateEnv
 ) where
 
-import Syntax.Common (ID (ID), Money (BCoins), Participant (Participant))
+import Syntax.Common (Money (BCoins), Participant (Participant), ID (..), VarID, ConcID)
 import Syntax.Contract (GuardedContract (Withdraw))
 import Syntax.Label
 import qualified Data.Map as Map        -- avoid name clashes
@@ -15,33 +15,36 @@ import qualified Data.Map as Map        -- avoid name clashes
     label: predecessor label, defined in Syntax.Label
     index: decendent number under a predecessor label (LSplit)
 -}
-type Env = Map.Map ID (Label, Int)   -- alias, env = Map {id: (label, index)}
+type Environment = Map.Map VarID (Label ID, Int)   -- alias, env = Map {vid: (label cid|vid, index)}
 
 
 {- lookup id in environment
-    if exist:   return Just (label, index)
+    if exist:   return Just (label ID, index)
     else:       return Nothing
 -}
-lookupEnv :: ID -> Env -> Maybe (Label, Int)
+lookupEnv :: VarID -> Environment -> Maybe (Label ID, Int)
 lookupEnv = Map.lookup
 
 
 
 {- update the environment
-    if id exist:    do nothing (cannot rewrite the predecessor)
+    if id exist:    TODO
     else:           insert id: value into env
 -}
-updateEnv :: ID -> (Label, Int) -> Env -> Env
+updateEnv :: VarID -> (Label ID, Int) -> Environment -> Environment
 updateEnv id (label, index) env =
-    case lookupEnv id env of
-        Just _  -> env
-        Nothing -> Map.insert id (label, index) env
+    -- -- method 1: fail
+    -- case lookupEnv id env of
+    --     Just _  -> error "updateEnv: cannot update the environment with existing ID!"
+    --     Nothing -> Map.insert id (label, index) env
+    -- method 2: default update
+    Map.insert id (label, index) env
 
 
 {- create empty environment
     Map.empty
 -}
-emptyEnv :: Env
+emptyEnv :: Environment
 emptyEnv = Map.empty
 
 
@@ -49,7 +52,7 @@ emptyEnv = Map.empty
     []:     Map.empty
     else:   Map.Map
 -}
-setFromListEnv :: [(ID, (Label, Int))] -> Env
+setFromListEnv :: [(VarID, (Label ID, Int))] -> Environment
 setFromListEnv = Map.fromList
 
 

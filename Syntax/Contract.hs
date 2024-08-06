@@ -3,9 +3,13 @@ Module      : Syntax.Contract
 Description : BitML contract
 -}
 
-module Syntax.Contract where
+module Syntax.Contract (
+    Contract
+    , GuardedContract (..)
+) where
 
-import Syntax.Common ( Secret, Money, Participant, ID, Time, Pred )
+import Syntax.Common ( Secret, Money, Participant, ConcID, Time, Pred )
+
 
 -- BitML contract: a collaction of all choices (GContacts)
 type Contract = [GuardedContract] 
@@ -13,7 +17,7 @@ type Contract = [GuardedContract]
 
 -- BitML guarded contract 
 data GuardedContract =
-    PutReveal [ID] [Secret] Pred Contract
+    PutReveal [ConcID] [Secret] Pred Contract       -- v.deposits with ConcID
     | Withdraw Participant
     | Split [(Money, Contract)]
     | Auth [Participant] GuardedContract

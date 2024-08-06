@@ -1,17 +1,17 @@
 module Semantic.Operators where
 import Syntax.Label
-import Syntax.Common (ID (ID), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime)
+import Syntax.Common (ID (..), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime, ConcID, VarID (..), ConcID (..))
 import NewSet
 import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
 import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
+import Semantic.Environment
 
-
-{- CV function in BitML paper. Extract the ID in a label.
+{- CV function in BitML paper. Extract the ID (CID | VID) in a label.
     If label = Split / Withdraw / Put, return [id]
     else return Nothing (in paper: an empty set)
 -}
-cv :: Label -> Maybe [ID]
+cv :: Label id -> Maybe [id]
 cv l =
     case l of
         LSplit id _ -> Just [id]
@@ -22,7 +22,7 @@ cv l =
 
 
 -- greedyCombination of two Strategy Result Actions list
-greedyActionsCombination :: NewSet Label -> NewSet Label -> NewSet Label
+greedyActionsCombination :: Eq id => NewSet (Label id) -> NewSet (Label id) -> NewSet (Label id)
 greedyActionsCombination s1 s2 =
         let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
         let s2_empty = filterSet (\label -> cv label == Nothing) s2 in                                  -- cv(label') = empty
@@ -51,7 +51,6 @@ minTimeC gContracts = minimum $ map minTimeG gContracts
 minTimeG :: GuardedContract -> Time
 minTimeG (PutReveal _ _ _ contract) = minTimeC contract         -- minimum time of contract
 minTimeG (Withdraw _) = TerminationTime                         -- withdraw terminates the active contract
-minTimeG (Split []) = error "minTimeG: invalid contract, empty split"
 minTimeG (Split sList) = minimum $ map (minTimeC . snd) sList   -- minimum time of all splitted contratcs
 minTimeG (Auth _ gc) = minTimeG gc
 minTimeG (After t gc)
@@ -84,47 +83,58 @@ getSecLen s (Run (InitConfig, [(_, confList, _)])) =
             [] -> Nothing
             (sec, len) : xs -> if sec == s then Just len else Nothing
 
-    
 
-
+{- TODO: resolve VarID into ConcID
+    search for the predecessor of VarID in Environment till a ConcID
+    replace VarID with the corresponding ConcID in run
+-}  
+resolveID :: ID -> Environment -> Run -> ConcID
+resolveID (CID concId) _ _ = concId 
+resolveID (VID (VarID id)) _ _ = ConcID id
 
 {- TODO for eval
     1. update eval with 'env'
-    2. update 'do label' with 'lookup id Env'
-        2.1 use cv function to extract 'id'
-    3. write variable compare
-    4. finish IfElseThen predicate
+    2. update 'do label' with 'resolve id'
+
+    *. finish IfElseThen predicate
 -}
 
 
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
-eval :: AbstractStrategy -> ConcreteStrategy
-eval (Do label) = \_ -> Actions $ UnordSet [label]
+eval :: Environment -> AbstractStrategy -> ConcreteStrategy
+eval env (Do label) = \run -> 
+    case label of
+        LSplit id gc -> Actions $ UnordSet [LSplit (resolveID id env run) gc]
+        LAuthReveal p s -> Actions $ UnordSet [LAuthReveal p s]
+        LPutReveal ds secs p id gc -> Actions $ UnordSet [LPutReveal ds secs p (resolveID id env run) gc]
+        LWithdraw p m id -> Actions $ UnordSet [LWithdraw p m (resolveID id env run)]
+        LAuthControl p id gc -> Actions $ UnordSet [LAuthControl p (resolveID id env run) gc]
 
-eval DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+        
+eval env DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
 
-eval (WaitUntil (Time d)) =
+eval env (WaitUntil (Time d)) =
     \run -> let now = getCurrentTime run in
         if now < Time d then Delay $ subTime (Time d) now
         else error "Invalid strategy: time to wait already past"
 
-eval (Combination as1 as2) = \run ->
-    let cs1 = eval as1 in               -- cs1 run = sr1
-        let cs2 = eval as2 in
+eval env (Combination as1 as2) = \run ->
+    let cs1 = eval env as1 in               -- cs1 run = sr1
+        let cs2 = eval env as2 in
             case (cs1 run, cs2 run) of
                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
 
-eval (IfThenElse (CheckTimeOut t) as1 as2) =
-    \run -> let cs1 = eval as1 run in
-        let cs2 = eval as2 run in
+eval env (IfThenElse (CheckTimeOut t) as1 as2) =
+    \run -> let cs1 = eval env as1 run in
+        let cs2 = eval env as2 run in
             let now = getCurrentTime run in
                 if t < now then cs1 else cs2
 
 -- TODO: finish if-else-then predicate
-eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
+eval env (IfThenElse (Predicate PTrue) as1 as2) = eval env as1
 
 
 
@@ -134,11 +144,11 @@ eval (IfThenElse (Predicate PTrue) as1 as2) = eval as1
 
 main = do
     -- test cv
-    let l1 = LWithdraw (Participant "A") (BCoins 1) (ID "x1")
-    let l2 = LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))
-    let l3 = LSplit (ID "x1")
-    print $ cv l1       -- Just [ID "x1"]
-    print $ cv l2       -- Nothing
+    -- let l1 = LWithdraw (Participant "A") (BCoins 1) (ID "x1")
+    -- let l2 = LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))
+    -- let l3 = LSplit (ID "x1")
+    -- print $ cv l1       -- Just [ID "x1"]
+    -- print $ cv l2       -- Nothing
 
     -- test greedyActionsCombination
     -- let s1 = insertList EmptySet [LWithDraw (Participant "A") (BCoins 1) (ID "x1"), LAuthControl (Participant "A") (ID "x1") (Withdraw (Participant "A"))]
@@ -148,5 +158,7 @@ main = do
 
 
     -- TODO: test minTimeRun
+    -- print $ minTimeG (Split [])   not allowed by BitML semantics
+    print "Operators.hs"
 
 
