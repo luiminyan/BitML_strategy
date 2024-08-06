@@ -26,11 +26,13 @@ data StrategyResult =
     | Delay Time
 
 
--- newtype EvalFailure String = IOError String 
+newtype EvalFailure message = EvalFail message deriving (Show)
 
 
--- CS: functions (Run -> StrategyResult)
-type ConcreteStrategy = Run -> StrategyResult
+-- CS: functions (Run -> EvalFail | StrategyResult)
+type ConcreteStrategy = Run -> Either (EvalFailure String) StrategyResult 
+
+
 
 
 
