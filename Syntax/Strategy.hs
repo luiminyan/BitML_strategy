@@ -8,7 +8,7 @@ import NewSet
 -- data Operator = Operator    -- A place holder for operator
 
 
-data Condition = CheckTimeOut Time | Predicate Pred      -- Condition will be used in strategy  
+data Condition = CheckTimeOut Time | Predicate Pred deriving (Show)      -- Condition will be used in strategy  
 
 
 data AbstractStrategy =
@@ -18,18 +18,18 @@ data AbstractStrategy =
     | Combination AbstractStrategy AbstractStrategy         -- TODO: add Operator
     | ExecutedThenElse (Label ID) [VarID] AbstractStrategy AbstractStrategy   -- (Label CID|VID) -> [VarID]
     | IfThenElse Condition AbstractStrategy AbstractStrategy        -- Condition: check Time | Pred
-
+    deriving (Show)
 
 -- Result of a strategy on a given run
 data StrategyResult =
     Actions (NewSet (Label ConcID))       -- Action NewSet [Label ConID]
     | Delay Time
-
+    deriving (Show)
 
 -- newtype EvalFailure message = EvalFail message deriving (Show)
 
 
--- CS: functions (Run -> EvalFail | StrategyResult)
+-- TODO: CS: functions (Run -> EvalFail | StrategyResult)
 type ConcreteStrategy = Run -> StrategyResult 
 
 
