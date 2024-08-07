@@ -1,5 +1,5 @@
 module Syntax.Strategy where
-import Syntax.Common (Time(..), ID, Pred, subTime, VarID, ConcID)
+import Syntax.Common (Time(..), ID(..), VarID, ConcID, Pred, subTime)
 import Syntax.Label (Label)
 import Syntax.Run (Run(..), InitConfiguration (..))
 import NewSet 
@@ -16,7 +16,7 @@ data AbstractStrategy =
     | DoNothing
     | WaitUntil Time
     | Combination AbstractStrategy AbstractStrategy         -- TODO: add Operator
-    | SuccThenElse (Label ConcID) [VarID] AbstractStrategy AbstractStrategy   -- (Label ConcID) -> [VarID]
+    | ExecutedThenElse (Label ID) [VarID] AbstractStrategy AbstractStrategy   -- (Label CID|VID) -> [VarID]
     | IfThenElse Condition AbstractStrategy AbstractStrategy        -- Condition: check Time | Pred
 
 
@@ -26,11 +26,11 @@ data StrategyResult =
     | Delay Time
 
 
-newtype EvalFailure message = EvalFail message deriving (Show)
+-- newtype EvalFailure message = EvalFail message deriving (Show)
 
 
 -- CS: functions (Run -> EvalFail | StrategyResult)
-type ConcreteStrategy = Run -> Either (EvalFailure String) StrategyResult 
+type ConcreteStrategy = Run -> StrategyResult 
 
 
 
