@@ -13,10 +13,11 @@ module NewSet (
     , mapSet
     , mapSetList
     , filterSet
+    , isEmptySet
 ) where
 
 import Syntax.Label (Label(LWithdraw, LSplit, LPutReveal))
-import Syntax.Common (Participant(Participant), ID (ID), Pred (PTrue))
+import Syntax.Common (Participant(Participant), ID (..), Pred (PTrue))
 
 data NewSet a = EmptySet | UnordSet [a] deriving (Show)
 
@@ -70,6 +71,11 @@ filterSet :: Eq a => (a -> Bool) -> NewSet a -> NewSet a
 filterSet _ EmptySet = EmptySet
 filterSet f (UnordSet s) = foldl (\acc x -> if f x then insertElem acc x else acc) EmptySet s
 
+
+-- if a set is empty
+isEmptySet :: NewSet a -> Bool
+isEmptySet EmptySet = True
+isEmptySet _        = False
 
 main = do
     let s1 = insertElem (UnordSet [1]) 2                         -- UnordSet [1, 2]
