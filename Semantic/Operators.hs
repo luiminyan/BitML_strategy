@@ -148,8 +148,15 @@ eval env (Combination as1 as2) = \run ->
                 (as1, Delay t2)             -> as1
                 (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
 
+
 eval env (ExecutedThenElse label succList as1 as2) = \run ->
     case label of
+        LSplit id gc ->
+            let env' = updateAllSuccEnv label succList env in
+            if executedLabel (LSplit (resolveID id env run) gc) run
+                then eval env' as1 run
+                else eval env as2 run
+                
         LAuthReveal p s -> 
             if executedLabel (LAuthReveal p s) run 
                 then eval env as1 run 
