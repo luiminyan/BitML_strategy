@@ -121,7 +121,6 @@ resolveLabelID label env run =
 
 
 
-
 {-  check if a label is executed in a run
     init-run: false
 -}
@@ -129,11 +128,6 @@ executedLabel :: Label ConcID -> Run -> Bool
 executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
 
 
-
-{- 
-    TODO for eval
-    *. finish IfElseThen predicate
--}
 
 
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
@@ -155,15 +149,16 @@ eval env (Combination as1 as2) = \run ->
                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
-                (Actions s1, Actions s2)    -> Actions $ greedyActionsCombination s1 s2
-
+                (Actions s1, Actions s2)    -> 
+                    if isEmptySet s1                    -- possibly leads to Actions EmptySet => Delay min-time 
+                        then Delay $ minTimeRun run
+                        else Actions $ greedyActionsCombination s1 s2
 
 eval env (ExecutedThenElse label succList as1 as2) = \run ->
     let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
         if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
             then eval env' as1 run
-            else eval env as2 run
-       
+            else eval env as2 run       
 
 eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then as1 else as2
     \run -> let cs1 = eval env as1 run in
@@ -171,11 +166,11 @@ eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then 
             let now = getCurrentTime run in
                 if t < now then cs1 else cs2
 
-
 eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicate
     if evalPred p run 
         then eval env as1 run
         else eval env as2 run
+
 
 
 
@@ -201,8 +196,6 @@ evalPred (PLt e1 e2) run =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (<=) n1 n2
         _                   -> error ""
-
-
 
 
 {-  evaluate an artihmetic expression based on a run
