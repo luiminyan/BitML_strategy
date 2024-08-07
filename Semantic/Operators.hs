@@ -79,7 +79,7 @@ minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 getSecLen :: Secret -> Run -> Maybe Int
 getSecLen _ (Run (InitConfig, [])) = Nothing
 getSecLen s (Run (InitConfig, [(_, confList, _)])) =
-    let revSecList = foldl (\acc (RevealedSecrect _ secret sLen) -> (secret, sLen) : acc) [] confList in
+    let revSecList = foldl (\acc (RevealedSecret _ secret sLen) -> (secret, sLen) : acc) [] confList in
         case revSecList of
             [] -> Nothing
             (sec, len) : xs -> if sec == s then Just len else Nothing
@@ -176,9 +176,6 @@ eval env (IfThenElse (Predicate PTrue) as1 _) = eval env as1
 
 
 
-
-
-readSecret
 
 main = do
     -- -- cv tests passed!

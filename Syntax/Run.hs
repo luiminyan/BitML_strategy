@@ -14,7 +14,7 @@ data ConfigObject =
     | Deposit Participant Money ConcID
     | AuthTakeBranch Participant ConcID GuardedContract     -- Authorization
     | SecretCommit Participant Secret
-    | RevealedSecrect  Participant Secret Int
+    | RevealedSecret  Participant Secret Int
     deriving (Show)
 
 
