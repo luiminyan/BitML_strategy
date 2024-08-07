@@ -97,13 +97,29 @@ updateAllSuccEnv label idList env = updateHelper label idList env 0
 
 
 
-{- TODO: resolve VarID into ConcID
+{- 
+    TODO: resolve VarID into ConcID
+    TODO: return Either ConcID | Failure
     search for the predecessor of VarID in Environment till a ConcID
     replace VarID with the corresponding ConcID in run
 -}
 resolveID :: ID -> Environment -> Run -> ConcID
 resolveID (CID concId) _ _ = concId
 resolveID (VID (VarID id)) _ _ = ConcID id
+
+
+
+{- resolve the id in a label, helper function for eval do Label & ExecutedThenElse -}
+resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
+resolveLabelID label env run =
+    case label of 
+        LSplit id gc                -> LSplit (resolveID id env run) gc
+        LAuthReveal p s             -> LAuthReveal p s
+        LPutReveal ds secs p id gc  -> LPutReveal ds secs p (resolveID id env run) gc
+        LWithdraw p m id            -> LWithdraw p m (resolveID id env run)
+        LAuthControl p id gc        -> LAuthControl p (resolveID id env run) gc
+
+
 
 
 {-  check if a label is executed in a run
@@ -114,9 +130,8 @@ executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuple
 
 
 
-{- TODO for eval
-    1. update 'do label' with 'resolve id'
-
+{- 
+    TODO for eval
     *. finish IfElseThen predicate
 -}
 
@@ -124,13 +139,7 @@ executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuple
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
 eval :: Environment -> AbstractStrategy -> ConcreteStrategy
 eval env (Do label) = \run ->
-    case label of
-        LSplit id gc                -> Actions $ UnordSet [LSplit (resolveID id env run) gc]
-        LAuthReveal p s             -> Actions $ UnordSet [LAuthReveal p s]
-        LPutReveal ds secs p id gc  -> Actions $ UnordSet [LPutReveal ds secs p (resolveID id env run) gc]
-        LWithdraw p m id            -> Actions $ UnordSet [LWithdraw p m (resolveID id env run)]
-        LAuthControl p id gc        -> Actions $ UnordSet [LAuthControl p (resolveID id env run) gc]
-
+    Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
 
 eval env DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
 
@@ -150,35 +159,13 @@ eval env (Combination as1 as2) = \run ->
 
 
 eval env (ExecutedThenElse label succList as1 as2) = \run ->
-    case label of
-        LSplit id gc ->
-            let env' = updateAllSuccEnv label succList env in
-            if executedLabel (LSplit (resolveID id env run) gc) run
-                then eval env' as1 run
-                else eval env as2 run
-                
-        LAuthReveal p s -> 
-            if executedLabel (LAuthReveal p s) run 
-                then eval env as1 run 
-                else eval env as2 run
-        LPutReveal depoList secList p id gc -> 
-            let env' = updateEnv (head succList) (label, 0) env in
-                if executedLabel (LPutReveal depoList secList p (resolveID id env run) gc) run      -- if label elem* run
-                    then eval env' as1 run      -- eval as1 with the updated env
-                    else eval env as2 run
-        LWithdraw p m id -> 
-            if executedLabel (LWithdraw p m (resolveID id env run)) run 
-                then eval env as1 run 
-                else eval env as2 run
-        LAuthControl p id gc -> 
-            if executedLabel (LAuthControl p (resolveID id env run) gc) run 
-                then eval env as1 run 
-                else eval env as2 run        
+    let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
+        if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
+            then eval env' as1 run
+            else eval env as2 run
+       
 
-
-
-
-eval env (IfThenElse (CheckTimeOut t) as1 as2) =
+eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then as1 else as2
     \run -> let cs1 = eval env as1 run in
         let cs2 = eval env as2 run in
             let now = getCurrentTime run in
@@ -191,10 +178,10 @@ eval env (IfThenElse (Predicate PTrue) as1 _) = eval env as1
 
 
 
-
+readSecret
 
 main = do
-    -- -- cv tested!
+    -- -- cv tests passed!
     -- let l1 = LWithdraw (Participant "A") (BCoins 1) (VarID "x1")
     -- let l2 = LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))
     -- let l3 = LSplit (CID (ConcID "x1")) (Split [])
