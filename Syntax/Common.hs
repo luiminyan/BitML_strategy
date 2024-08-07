@@ -63,7 +63,7 @@ data Pred =
 
 
 -- Arithmetic expressions for logical predicates.
-data E  = EInt Integer
+data E  = EInt Int
     -- Length of a secret, different from BitMLx 
     | ELength Secret
     | EAdd E E

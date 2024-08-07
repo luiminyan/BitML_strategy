@@ -171,8 +171,57 @@ eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then 
             let now = getCurrentTime run in
                 if t < now then cs1 else cs2
 
--- TODO: finish if-else-then predicate
-eval env (IfThenElse (Predicate PTrue) as1 _) = eval env as1
+
+eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicate
+    if evalPred p run 
+        then eval env as1 run
+        else eval env as2 run
+
+
+
+{- evaluate a predicate based on a run -}
+evalPred :: Pred -> Run -> Bool
+evalPred PTrue _            = True
+evalPred (PAnd p1 p2) run   = (&&) (evalPred p1 run) (evalPred p2 run)
+evalPred (POr p1 p2) run    = (||) (evalPred p1 run) (evalPred p2 run)
+evalPred (PNot p) run       = not (evalPred p run)
+evalPred (PEq e1 e2) run    = 
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (==) n1 n2
+        _                   -> error ""         -- TODO: failure!
+evalPred (PNeq e1 e2) run   =
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (/=) n1 n2
+        _                   -> error ""         -- TODO: failure!
+evalPred (PBtwn e1 e2 e3) run =
+    case (evalArithExpr e1 run, evalArithExpr e2 run, evalArithExpr e3 run) of
+        (Just n1, Just n2, Just n3) -> (&&) ((<=) n1 n2) ((<=) n2 n3)       -- n1 <= n2 <= n3
+        _                           -> error ""
+evalPred (PLt e1 e2) run = 
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (<=) n1 n2
+        _                   -> error ""
+
+
+
+
+{-  evaluate an artihmetic expression based on a run
+    invalid expression: Nothing
+    valid:              Just <Int>
+-}
+evalArithExpr :: E -> Run -> Maybe Int
+evalArithExpr e run =
+    case e of
+        EInt i      -> Just i
+        ELength s   -> getSecLen s run 
+        EAdd e1 e2  -> 
+            case (evalArithExpr e1 run, evalArithExpr e2 run) of
+                (Just i1, Just i2)  -> Just $ (+) i1 i2 
+                _                   -> Nothing
+        ESub e1 e2  ->
+            case (evalArithExpr e1 run, evalArithExpr e2 run) of
+                (Just i1, Just i2)  -> Just $ (-) i1 i2
+                _                   -> Nothing
 
 
 
