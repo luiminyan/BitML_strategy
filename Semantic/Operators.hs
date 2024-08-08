@@ -25,7 +25,7 @@ import Semantic.Environment
 greedyActionsCombination :: Eq id => NewSet (Label id) -> NewSet (Label id) -> NewSet (Label id)
 greedyActionsCombination s1 s2 =
         let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
-        let s2_empty = filterSet (\label -> cv label == Nothing) s2 in                                  -- cv(label') = empty
+        let s2_empty = filterSet (\label -> cv label == []) s2 in                                  -- cv(label') = empty
             let s2_not_empty = negationSet s2 s2_empty in                                               -- cv(label') = not empty
                 let s2_unique = filterSet (\label -> cv label `notElem` s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
                     let selectedS2 = filterSet (elemSet (unionSet s2_empty s2_unique)) s2 in            -- apply original label order of s2
@@ -157,7 +157,7 @@ eval env (Combination as1 as2) = \run ->
 eval env (ExecutedThenElse label succList as1 as2) = \run ->
     let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
         if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
-            then eval env' as1 run
+            then eval env' as1 run                              -- label executed: update env
             else eval env as2 run       
 
 eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then as1 else as2
@@ -220,20 +220,12 @@ evalArithExpr e run =
 
 
 main = do
-    -- -- cv tests passed!
-    -- let l1 = LWithdraw (Participant "A") (BCoins 1) (VarID "x1")
-    -- let l2 = LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))
-    -- let l3 = LSplit (CID (ConcID "x1")) (Split [])
-    -- print $ cv l1       -- Just [VarID "x1"]
-    -- print $ cv l2       -- Nothing
-    -- print $ cv l3       -- Just [CID (ConcID "x1")]
-
     -- test greedyActionsCombination
     -- let s1 = insertList EmptySet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))]
     -- let s4 = insertList EmptySet [LSplit (ConcID "x1") (Split []), LPutReveal [] [] PTrue (ConcID "x2") (Split []), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
 
-    -- print $ greedyActionsCombination s1 s4      -- UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")]
-
+    -- print $ (greedyActionsCombination s1 s4) == (UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")])
+    -- True
 
     -- TODO: test minTimeRun
     -- print $ minTimeG (Split [])   not allowed by BitML semantics
