@@ -28,37 +28,23 @@ lookupEnv = Map.lookup
 
 
 
-{- update the environment with label(split, put), and avoid loop
-    SuccId : (Label PredID, index):
-        PredID = ConcID, update
-        PredID = VarID, 
-            if lookupEnv PredId Env = Nothing, then updateEnv
-            else fail
+{- update the environment with put or split label and its' successor 
+    with protections against:
+    1. rewrite existing successor
+    2. Environment loop: add successor which already exists in env as predecessor (VarID)
 -}
 updateEnv :: VarID -> (Label ID, Int) -> Environment -> Environment
 updateEnv id (label, index) env =
-    -- -- method 1: fail
-    -- case lookupEnv id env of
-    --     Just _  -> error "updateEnv: cannot update the environment with existing ID!"
-    --     Nothing -> Map.insert id (label, index) env
-    -- method 2: default update
+    case lookupEnv id env of
+        Just _  -> error "updateEnv: successor ID already exist!"
+        Nothing ->
+            let predLabelList = filter putOrSplit $ map (fst . snd) $ Map.toList env in
+                let predIDList = concatMap cv predLabelList in
+                    let varIDList = [vid | (VID vid) <- predIDList] in          -- extract all var id from list
+                        if elem id varIDList 
+                            then error "updateEnv: Environment loop" 
+                            else Map.insert id (label, index) env
 
-    case label of
-        LSplit labelId _ -> 
-            case labelId of
-                CID _ -> Map.insert id (label, index) env
-                VID labelVId -> 
-                    if lookupEnv labelVId env == Nothing
-                        then Map.insert id (label, index) env           -- SuccId not a key in env
-                        else error "updateEnv: Environment loop!"
-        LPutReveal _ _ _ labelId _ ->
-            case labelId of
-                CID _ -> Map.insert id (label, index) env
-                VID labelVId -> 
-                    if lookupEnv labelVId env == Nothing
-                        then Map.insert id (label, index) env           -- SuccId not a key in env
-                        else error "updateEnv: Environment loop!"
-        _ -> env
 
 
 
@@ -76,6 +62,11 @@ emptyEnv = Map.empty
 setFromListEnv :: [(VarID, (Label ID, Int))] -> Environment
 setFromListEnv = Map.fromList
 
+
+{- return a list = [(key, value)] 
+-}
+envToList :: Environment -> [(VarID, (Label ID, Int))]
+envToList = Map.toList
 
 -- main = do
 --     let envEmpty = emptyEnv
