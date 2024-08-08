@@ -1,5 +1,6 @@
 module Syntax.Label (
     Label (..)
+    , cv
 ) where
 
 import Syntax.Common ( Secret, Money, Participant, ConcID, Pred )
@@ -14,3 +15,17 @@ data Label id =
     | LWithdraw Participant Money id
     | LAuthControl Participant id GuardedContract 
     deriving (Eq, Show)
+
+
+
+{- CV function in BitML paper. Extract the ID (CID | VID) in a label.
+    If label = Split / Withdraw / Put, return [id]
+    else return Nothing (in paper: an empty set)
+-}
+cv :: Label id -> Maybe [id]
+cv l =
+    case l of
+        LSplit id _ -> Just [id]
+        LPutReveal _ _ _ id _ -> Just [id]
+        LWithdraw _ _ id -> Just [id]
+        _ -> Nothing

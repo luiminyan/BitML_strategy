@@ -1,5 +1,5 @@
 module Semantic.Operators where
-import Syntax.Label ( Label(..) )
+import Syntax.Label 
 import Syntax.Common (ID (..), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime, VarID (..), ConcID (..))
 import NewSet
 import Syntax.Contract (GuardedContract(..), Contract)
@@ -7,17 +7,17 @@ import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
 import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
 import Semantic.Environment
 
-{- CV function in BitML paper. Extract the ID (CID | VID) in a label.
-    If label = Split / Withdraw / Put, return [id]
-    else return Nothing (in paper: an empty set)
--}
-cv :: Label id -> Maybe [id]
-cv l =
-    case l of
-        LSplit id _ -> Just [id]
-        LPutReveal _ _ _ id _ -> Just [id]
-        LWithdraw _ _ id -> Just [id]
-        _ -> Nothing
+-- {- CV function in BitML paper. Extract the ID (CID | VID) in a label.
+--     If label = Split / Withdraw / Put, return [id]
+--     else return Nothing (in paper: an empty set)
+-- -}
+-- cv :: Label id -> Maybe [id]
+-- cv l =
+--     case l of
+--         LSplit id _ -> Just [id]
+--         LPutReveal _ _ _ id _ -> Just [id]
+--         LWithdraw _ _ id -> Just [id]
+--         _ -> Nothing
 
 
 
