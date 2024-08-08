@@ -86,15 +86,19 @@ getSecLen s (Run (InitConfig, [(_, confList, _)])) =
 
 
 
-{- updateAllSuccEnv, update environment with all successors
+{- updateAllSuccEnv, update environment with 'LPut' or 'LSplit' and all its successor(s)
+    split or put [succ(s)], update
+    other-labels [], orig. env
+    (embedded function) updateHelper: append indexes
+
 -}
 updateAllSuccEnv :: Label ID -> [VarID] -> Environment -> Environment
-updateAllSuccEnv label idList env = updateHelper label idList env 0
+updateAllSuccEnv label succList env = updateHelper label succList env 0
     where 
         updateHelper :: Label ID -> [VarID] -> Environment  -> Int -> Environment
+        updateHelper LSplit {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
+        updateHelper LPutReveal {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
         updateHelper _ [] env _ = env
-        updateHelper label (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
-
 
 
 {- 
