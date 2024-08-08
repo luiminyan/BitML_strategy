@@ -19,7 +19,7 @@ module NewSet (
 import Syntax.Label (Label(LWithdraw, LSplit, LPutReveal))
 import Syntax.Common (Participant(Participant), ID (..), Pred (PTrue))
 
-data NewSet a = EmptySet | UnordSet [a] deriving (Show)
+data NewSet a = EmptySet | UnordSet [a] deriving (Eq, Show)
 
 
 -- check if a elem is in set
