@@ -3,11 +3,16 @@ module Syntax.Common where
 
 newtype ConcID = ConcID String deriving (Ord, Eq, Show)     -- ConcreteID: should exist in run
 newtype VarID = VarID String deriving (Ord, Eq, Show)       -- VariableID: possible ID, need to be resolved
-data ID = CID ConcID | VID VarID deriving (Eq, Show)   -- active contract ID | deposit ID
+data ID = CID ConcID | VID VarID deriving (Show)   -- active contract ID | deposit ID
+
+instance Eq ID where
+    (CID id1) == (CID id2) = id1 == id2
+    (VID id1) == (VID id2) = id1 == id2 
+    _ == _ = False              -- CID /= VID
 
 instance Ord ID where
-    compare (CID (ConcID id1)) (VID (VarID id2)) = compare id1 id2 
-    compare (VID (VarID id1)) (CID (ConcID id2)) = compare id1 id2
+    compare (CID (ConcID id1)) (VID (VarID id2)) = GT       -- assume ConcID > VarID
+    compare (VID (VarID id1)) (CID (ConcID id2)) = LT
     compare (CID id1) (CID id2) = compare id1 id2
     compare (VID id1) (VID id2) = compare id1 id2
 
@@ -83,5 +88,5 @@ main = do
 --     print $ max t2 t1              -- Time 10
 --     print $ max t1 t3              -- TerminationTime
     let id1 = VID $ VarID "a"
-    let id2 = CID $ ConcID "b"
-    print $ compare id1 id2
+    let id2 = CID $ ConcID "a"
+    print $ compare (VarID "a") (ConcID "a")
