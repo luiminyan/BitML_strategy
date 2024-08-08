@@ -2,6 +2,7 @@ module Semantic.Environment (
     Environment
     , lookupEnv
     , updateEnv
+    , emptyEnv
 ) where
 
 import Syntax.Common (Money (BCoins), Participant (Participant), ID (..), VarID, ConcID)
@@ -27,9 +28,12 @@ lookupEnv = Map.lookup
 
 
 
-{- update the environment
-    if id exist:    TODO
-    else:           insert id: value into env
+{- update the environment with label(split, put), and avoid loop
+    SuccId : (Label PredID, index):
+        PredID = ConcID, update
+        PredID = VarID, 
+            if lookupEnv PredId Env = Nothing, then updateEnv
+            else fail
 -}
 updateEnv :: VarID -> (Label ID, Int) -> Environment -> Environment
 updateEnv id (label, index) env =
@@ -38,7 +42,24 @@ updateEnv id (label, index) env =
     --     Just _  -> error "updateEnv: cannot update the environment with existing ID!"
     --     Nothing -> Map.insert id (label, index) env
     -- method 2: default update
-    Map.insert id (label, index) env
+
+    case label of
+        LSplit labelId _ -> 
+            case labelId of
+                CID _ -> Map.insert id (label, index) env
+                VID labelVId -> 
+                    if lookupEnv labelVId env == Nothing
+                        then Map.insert id (label, index) env           -- SuccId not a key in env
+                        else error "updateEnv: Environment loop!"
+        LPutReveal _ _ _ labelId _ ->
+            case labelId of
+                CID _ -> Map.insert id (label, index) env
+                VID labelVId -> 
+                    if lookupEnv labelVId env == Nothing
+                        then Map.insert id (label, index) env           -- SuccId not a key in env
+                        else error "updateEnv: Environment loop!"
+        _ -> env
+
 
 
 {- create empty environment
