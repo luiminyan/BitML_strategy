@@ -3,7 +3,7 @@ import Syntax.Label
 import Syntax.Common (ID (..), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime, VarID (..), ConcID (..))
 import NewSet
 import Syntax.Contract (GuardedContract(..), Contract)
-import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
+import Syntax.Run (Run (Run), ConfigObject (..))
 import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
 import Semantic.Environment
 import qualified Data.Map as Map
@@ -23,16 +23,16 @@ greedyActionsCombination s1 s2 =
 
 -- get current time from run
 getCurrentTime :: Run -> Time
-getCurrentTime (Run (InitConfig, [])) = Time 0      -- init time = time 0
+getCurrentTime (Run (_, [])) = Time 0      -- init time = time 0
 getCurrentTime (Run (_, [(_, _, t)])) = t
-getCurrentTime (Run (_, x : xs)) = getCurrentTime (Run (InitConfig, xs))
+getCurrentTime (Run (init, x : xs)) = getCurrentTime (Run (init, xs))
 
 
 
 -- minimum time from a contract
 minTimeC :: Contract -> Time
 minTimeC [] = TerminationTime           -- The minimum of nothing is infinite!
-minTimeC gContracts = minimum $ map minTimeG gContracts
+minTimeC gConList = minimum $ map minTimeG gConList
 
 
 
@@ -49,12 +49,12 @@ minTimeG (After t gc)
 
 -- minimum time from active contracts in run
 minTimeRun :: Run -> Time
-minTimeRun (Run (InitConfig, [])) = TerminationTime           -- The minimum of nothing is infinite!
-minTimeRun (Run (InitConfig, [(_, configList, _)])) =                                               -- last tuple in the run
+minTimeRun (Run (_, [])) = TerminationTime           -- The minimum of nothing is infinite!
+minTimeRun (Run (_, [(_, configList, _)])) =                                               -- last tuple in the run
     let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in              -- configObj list with only active contracts
         let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in       -- list of contracts from each active contract
         minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
-minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
+minTimeRun (Run (init, x: xs)) = minTimeRun (Run (init, xs))
 
 
 
@@ -73,25 +73,51 @@ updateAllSuccEnv label succList env = updateHelper label succList env 0
         updateHelper _ [] env _ = env
 
 
-{- 
-    TODO: resolve VarID into ConcID
-    TODO: return Either ConcID | Failure
-    search for the predecessor of VarID in Environment till a ConcID
-    replace VarID with the corresponding ConcID in run
+
+type SuccIdDict = Map.Map Int ConcID        -- {index: concrete successor id}
+
+
+{- lookup a successor if from a label's successor list by index
 -}
+getSuccByIndex :: Int -> SuccIdDict -> Maybe ConcID
+getSuccByIndex = Map.lookup
+
+
+{- get the successor(new) active contract id from run, after a label is executed
+    run wit
+-}
+getSuccDictFromRun :: Label ConcID -> Run -> SuccIdDict
+getSuccDictFromRun label run =
+    case run of
+        Run (_, [(l, confList, _)]) ->
+            if label == l
+                then Map.fromList $ zip [0 ..] (getIdList confList)     -- [(index, succId)] -> {index: succId} 
+                else Map.empty                                          -- end of recursion: no successor found
+        Run (init, (lbf, confListBf, tbf) : (l, confList, _) : xs) ->
+            if label == lbf
+                then getSuccDictFromRun label (Run (init, [(lbf, confListBf, tbf)]))
+                
+                else if label == l
+                    then
+                        let idListBf = getIdList confListBf in          -- active contract ids in run, before label is applied
+                            let idList = getIdList confList in          -- ..., after label is applied
+                                let newId = filter (`notElem` idListBf) idList in
+                                    Map.fromList $ zip [0 ..] newId
+                    else getSuccDictFromRun label (Run (init, xs))
+    where getIdList confList = [cid | (ActiveContract c m cid) <- confList]     -- TODO: add withdraw later
+
+
+
 resolveID :: ID -> Environment -> Run -> ConcID
 resolveID (CID concId) _ _ = concId
-resolveID (VID (VarID id)) _ _ = ConcID id
-
-
-type SuccIdList = Map.Map ConcID (Label ConcID, Int)
-
-resolveID' :: ID -> Environment -> Run -> ConcID
-resolveID' (CID concId) _ _ = concId
-resolveID' (VID vid) env run = 
-    
-
-
+resolveID (VID toResolveId) env run =
+    case lookupEnv toResolveId env of
+        Just (predLabel, index) ->
+            let succIdDict = getSuccDictFromRun (resolveLabelID predLabel env run) run in       -- successor Id list of a label in run, possibly empty
+                case getSuccByIndex index succIdDict of
+                    Just resolvedId -> resolvedId
+                    Nothing         -> error "resolveId: Id cannot be resolved!"
+        Nothing -> error "resolveID: ID not found in environment!"
 
 
 
@@ -115,18 +141,18 @@ executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuple
 
 
 -- eval Predicate
-{- get the length of a secret, to be used in if-then-else pred
+{- get the length of a secret recursivly from run, to be used in if-then-else pred
     if secret revealed: Just sLen
     else:               Nothing    
 -}
-
 getSecLen :: Secret -> Run -> Maybe Int
-getSecLen _ (Run (InitConfig, [])) = Nothing
-getSecLen s (Run (InitConfig, [(_, confList, _)])) =
-    let revSecList = foldl (\acc (RevealedSecret _ secret sLen) -> (secret, sLen) : acc) [] confList in
-        case revSecList of
-            [] -> Nothing
-            (sec, len) : xs -> if sec == s then Just len else Nothing
+getSecLen _ (Run (_, [])) = Nothing
+getSecLen s (Run (init, (_, confList, _) : xs)) =
+    let revSecDict = Map.fromList [(sec, slen) | (RevealedSecret _ sec slen) <- confList] in
+        case Map.lookup s revSecDict of
+            Just slen   -> Just slen 
+            Nothing     -> getSecLen s (Run (init, xs))     -- recursivly check the next config tupel
+
 
 
 {-  evaluate an artihmetic expression based on a run
