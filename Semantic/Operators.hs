@@ -24,7 +24,7 @@ import Semantic.Environment
 -- greedyCombination of two Strategy Result Actions list
 greedyActionsCombination :: Eq id => NewSet (Label id) -> NewSet (Label id) -> NewSet (Label id)
 greedyActionsCombination s1 s2 =
-        let s1_cv_result = mapSetList cv s1 in                                                          -- store cv(label) in a list
+        let s1_cv_result = toListSet cv s1 in                                                          -- store cv(label) in a list
         let s2_empty = filterSet (\label -> cv label == []) s2 in                                  -- cv(label') = empty
             let s2_not_empty = negationSet s2 s2_empty in                                               -- cv(label') = not empty
                 let s2_unique = filterSet (\label -> cv label `notElem` s1_cv_result) s2_not_empty in   -- cv(label') not in cv(label) list
@@ -86,7 +86,7 @@ getSecLen s (Run (InitConfig, [(_, confList, _)])) =
 
 
 
-{- updateAllSuccEnv, update environment with 'LPut' or 'LSplit' and all its successor(s)
+{- update environment with 'LPut' or 'LSplit' and all its successor(s)
     split or put [succ(s)], update
     other-labels [], orig. env
     (embedded function) updateHelper: append indexes
@@ -225,9 +225,8 @@ evalArithExpr e run =
 
 main = do
     -- test greedyActionsCombination
-    -- let s1 = insertList EmptySet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))]
-    -- let s4 = insertList EmptySet [LSplit (ConcID "x1") (Split []), LPutReveal [] [] PTrue (ConcID "x2") (Split []), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
-
+    -- let s1 = fromListSet EmptySet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))]
+    -- let s4 = fromListSet EmptySet [LSplit (ConcID "x1") (Split []), LPutReveal [] [] PTrue (ConcID "x2") (Split []), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
     -- print $ (greedyActionsCombination s1 s4) == (UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")])
     -- True
 

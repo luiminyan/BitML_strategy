@@ -7,11 +7,11 @@ module NewSet (
     NewSet (..)
     , elemSet
     , insertElem
-    , insertList
+    , fromListSet
     , unionSet
     , negationSet
     , mapSet
-    , mapSetList
+    , toListSet
     , filterSet
     , isEmptySet
 ) where
@@ -37,8 +37,8 @@ insertElem (UnordSet as) a
 
 
 -- insert a list into a set
-insertList :: (Eq a) => NewSet a -> [a] -> NewSet a
-insertList= foldl insertElem
+fromListSet :: (Eq a) => NewSet a -> [a] -> NewSet a
+fromListSet= foldl insertElem
 
 
 -- union function (all elements from both sets)
@@ -57,13 +57,13 @@ negationSet (UnordSet s1) s2 = foldl (\acc x -> if elemSet s2 x then acc else in
 -- map function for NewSet
 mapSet :: (Eq a, Eq b) => (a -> b) -> NewSet a -> NewSet b
 mapSet _ EmptySet = EmptySet
-mapSet f (UnordSet s) = insertList EmptySet (map f s)
+mapSet f (UnordSet s) = fromListSet EmptySet (map f s)
 
 
 -- map NewSet into list
-mapSetList :: (a -> b) -> NewSet a -> [b]
-mapSetList _ EmptySet = []
-mapSetList f (UnordSet l) = map f l
+toListSet :: (a -> b) -> NewSet a -> [b]
+toListSet _ EmptySet = []
+toListSet f (UnordSet l) = map f l
 
 
 -- filter function on NewSet
@@ -80,13 +80,13 @@ isEmptySet _        = False
 main = do
     let s1 = insertElem (UnordSet [1]) 2                         -- UnordSet [1, 2]
     let s2 = insertElem (insertElem EmptySet "Apple") "Banana"       -- UnordSet ["Apple", "Banana"]
-    let s3 = insertList EmptySet [2, 4, 1, 3]
+    let s3 = fromListSet EmptySet [2, 4, 1, 3]
 
     print $ unionSet s1 s3          -- UnordSet [1, 2, 4, 3]
     print $ negationSet s3 s1       -- UnordSet [4, 3]
     print $ filterSet even s3       -- UnordSet [2, 4]   
     print $ filterSet (==5) s3      -- EmptySet
     print $ mapSet (*2) s1
-    print $ mapSetList (*2) s1
+    print $ toListSet (*2) s1
     print $ filterSet (==1) s3
     print $ filterSet (==0) s3
