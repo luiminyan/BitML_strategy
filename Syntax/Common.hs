@@ -76,7 +76,7 @@ data E  = EInt Int
     deriving (Eq, Show)                                
 
 
-main = do
+-- main = do
 --     let t1 = Time 10
 --     let t2 = Time 5
 --     let t3 = TerminationTime
@@ -87,6 +87,6 @@ main = do
 --     print $ max t1 t1              -- Time 10
 --     print $ max t2 t1              -- Time 10
 --     print $ max t1 t3              -- TerminationTime
-    let id1 = VID $ VarID "a"
-    let id2 = CID $ ConcID "a"
-    print $ compare (VarID "a") (ConcID "a")
+    -- let id1 = VID $ VarID "a"
+    -- let id2 = CID $ ConcID "a"
+    -- print $ compare id1 id2

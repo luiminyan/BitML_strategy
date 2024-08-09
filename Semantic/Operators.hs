@@ -6,19 +6,7 @@ import Syntax.Contract (GuardedContract(..), Contract)
 import Syntax.Run (Run (Run), InitConfiguration (InitConfig), ConfigObject (..))
 import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
 import Semantic.Environment
-
--- {- CV function in BitML paper. Extract the ID (CID | VID) in a label.
---     If label = Split / Withdraw / Put, return [id]
---     else return Nothing (in paper: an empty set)
--- -}
--- cv :: Label id -> Maybe [id]
--- cv l =
---     case l of
---         LSplit id _ -> Just [id]
---         LPutReveal _ _ _ id _ -> Just [id]
---         LWithdraw _ _ id -> Just [id]
---         _ -> Nothing
-
+import qualified Data.Map as Map
 
 
 -- greedyCombination of two Strategy Result Actions list
@@ -70,22 +58,6 @@ minTimeRun (Run (InitConfig, x: xs)) = minTimeRun (Run (InitConfig, xs))
 
 
 
-
-{- get the length of a secret, to be used in if-then-else pred
-    if secret revealed: Just sLen
-    else:               Nothing    
--}
-
-getSecLen :: Secret -> Run -> Maybe Int
-getSecLen _ (Run (InitConfig, [])) = Nothing
-getSecLen s (Run (InitConfig, [(_, confList, _)])) =
-    let revSecList = foldl (\acc (RevealedSecret _ secret sLen) -> (secret, sLen) : acc) [] confList in
-        case revSecList of
-            [] -> Nothing
-            (sec, len) : xs -> if sec == s then Just len else Nothing
-
-
-
 {- update environment with 'LPut' or 'LSplit' and all its successor(s)
     split or put [succ(s)], update
     other-labels [], orig. env
@@ -112,6 +84,16 @@ resolveID (CID concId) _ _ = concId
 resolveID (VID (VarID id)) _ _ = ConcID id
 
 
+type SuccIdList = Map.Map ConcID (Label ConcID, Int)
+
+resolveID' :: ID -> Environment -> Run -> ConcID
+resolveID' (CID concId) _ _ = concId
+resolveID' (VID vid) env run = 
+    
+
+
+
+
 
 {- resolve the id in a label, helper function for eval do Label & ExecutedThenElse -}
 resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
@@ -131,6 +113,63 @@ resolveLabelID label env run =
 executedLabel :: Label ConcID -> Run -> Bool
 executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
 
+
+-- eval Predicate
+{- get the length of a secret, to be used in if-then-else pred
+    if secret revealed: Just sLen
+    else:               Nothing    
+-}
+
+getSecLen :: Secret -> Run -> Maybe Int
+getSecLen _ (Run (InitConfig, [])) = Nothing
+getSecLen s (Run (InitConfig, [(_, confList, _)])) =
+    let revSecList = foldl (\acc (RevealedSecret _ secret sLen) -> (secret, sLen) : acc) [] confList in
+        case revSecList of
+            [] -> Nothing
+            (sec, len) : xs -> if sec == s then Just len else Nothing
+
+
+{-  evaluate an artihmetic expression based on a run
+    invalid expression: Nothing
+    valid:              Just <Int>
+-}
+evalArithExpr :: E -> Run -> Maybe Int
+evalArithExpr e run =
+    case e of
+        EInt i      -> Just i
+        ELength s   -> getSecLen s run 
+        EAdd e1 e2  -> 
+            case (evalArithExpr e1 run, evalArithExpr e2 run) of
+                (Just i1, Just i2)  -> Just $ (+) i1 i2 
+                _                   -> Nothing
+        ESub e1 e2  ->
+            case (evalArithExpr e1 run, evalArithExpr e2 run) of
+                (Just i1, Just i2)  -> Just $ (-) i1 i2
+                _                   -> Nothing
+
+
+{- evaluate a predicate based on a run -}
+evalPred :: Pred -> Run -> Bool
+evalPred PTrue _            = True
+evalPred (PAnd p1 p2) run   = (&&) (evalPred p1 run) (evalPred p2 run)
+evalPred (POr p1 p2) run    = (||) (evalPred p1 run) (evalPred p2 run)
+evalPred (PNot p) run       = not (evalPred p run)
+evalPred (PEq e1 e2) run    = 
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (==) n1 n2
+        _                   -> error ""         -- TODO: failure!
+evalPred (PNeq e1 e2) run   =
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (/=) n1 n2
+        _                   -> error ""         -- TODO: failure!
+evalPred (PBtwn e1 e2 e3) run =
+    case (evalArithExpr e1 run, evalArithExpr e2 run, evalArithExpr e3 run) of
+        (Just n1, Just n2, Just n3) -> (&&) ((<=) n1 n2) ((<=) n2 n3)       -- n1 <= n2 <= n3
+        _                           -> error ""
+evalPred (PLt e1 e2) run = 
+    case (evalArithExpr e1 run, evalArithExpr e2 run) of
+        (Just n1, Just n2)  -> (<=) n1 n2
+        _                   -> error ""
 
 
 
@@ -178,47 +217,6 @@ eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicat
 
 
 
-{- evaluate a predicate based on a run -}
-evalPred :: Pred -> Run -> Bool
-evalPred PTrue _            = True
-evalPred (PAnd p1 p2) run   = (&&) (evalPred p1 run) (evalPred p2 run)
-evalPred (POr p1 p2) run    = (||) (evalPred p1 run) (evalPred p2 run)
-evalPred (PNot p) run       = not (evalPred p run)
-evalPred (PEq e1 e2) run    = 
-    case (evalArithExpr e1 run, evalArithExpr e2 run) of
-        (Just n1, Just n2)  -> (==) n1 n2
-        _                   -> error ""         -- TODO: failure!
-evalPred (PNeq e1 e2) run   =
-    case (evalArithExpr e1 run, evalArithExpr e2 run) of
-        (Just n1, Just n2)  -> (/=) n1 n2
-        _                   -> error ""         -- TODO: failure!
-evalPred (PBtwn e1 e2 e3) run =
-    case (evalArithExpr e1 run, evalArithExpr e2 run, evalArithExpr e3 run) of
-        (Just n1, Just n2, Just n3) -> (&&) ((<=) n1 n2) ((<=) n2 n3)       -- n1 <= n2 <= n3
-        _                           -> error ""
-evalPred (PLt e1 e2) run = 
-    case (evalArithExpr e1 run, evalArithExpr e2 run) of
-        (Just n1, Just n2)  -> (<=) n1 n2
-        _                   -> error ""
-
-
-{-  evaluate an artihmetic expression based on a run
-    invalid expression: Nothing
-    valid:              Just <Int>
--}
-evalArithExpr :: E -> Run -> Maybe Int
-evalArithExpr e run =
-    case e of
-        EInt i      -> Just i
-        ELength s   -> getSecLen s run 
-        EAdd e1 e2  -> 
-            case (evalArithExpr e1 run, evalArithExpr e2 run) of
-                (Just i1, Just i2)  -> Just $ (+) i1 i2 
-                _                   -> Nothing
-        ESub e1 e2  ->
-            case (evalArithExpr e1 run, evalArithExpr e2 run) of
-                (Just i1, Just i2)  -> Just $ (-) i1 i2
-                _                   -> Nothing
 
 
 

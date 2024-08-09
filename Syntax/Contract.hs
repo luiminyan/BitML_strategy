@@ -23,3 +23,6 @@ data GuardedContract =
     | Auth [Participant] GuardedContract
     | After Time GuardedContract
     deriving (Eq, Show)
+
+
+-- TODO: test cases for GuardedContract on Eq
