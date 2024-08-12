@@ -32,11 +32,15 @@ getCurrentTime (Run (init, x : xs)) = getCurrentTime (Run (init, xs))
 -- minimum time from a contract
 minTimeC :: Contract -> Time
 minTimeC [] = TerminationTime           -- The minimum of nothing is infinite!
-minTimeC gConList = minimum $ map minTimeG gConList
+minTimeC contract = minimum $ map minTimeG contract
 
 
 
--- minimum time from a guarded contract
+{- minimum time of a guarded contract
+    Withdraw: termintates the current active contract, returns termination time
+    After t: minimum between t and min-time from the followed up guarded contract
+    other labels: min-time of the followed up contract
+-}
 minTimeG :: GuardedContract -> Time
 minTimeG (PutReveal _ _ _ contract) = minTimeC contract         -- minimum time of contract
 minTimeG (Withdraw _) = TerminationTime                         -- withdraw terminates the active contract
@@ -47,13 +51,18 @@ minTimeG (After t gc)
     | otherwise = t
 
 
--- minimum time from active contracts in run
+{- minimum time from active contracts in run
+    only initialized run: Termination time
+    run without activeContracts in configuration: termination time
+    TODO: only last tuple in run, or the whole run?
+-}
 minTimeRun :: Run -> Time
 minTimeRun (Run (_, [])) = TerminationTime           -- The minimum of nothing is infinite!
 minTimeRun (Run (_, [(_, configList, _)])) =                                               -- last tuple in the run
-    let activeContractList = filter (\(ActiveContract contract _ _) -> True) configList in              -- configObj list with only active contracts
-        let contractList = map (\(ActiveContract contract _ _) -> contract) activeContractList in       -- list of contracts from each active contract
-        minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
+    let contractList = [c | (ActiveContract c m id) <- configList] in              -- list of contracts from each active contract
+        case contractList of
+            []  -> TerminationTime                  -- The minimum of nothing is infinite!
+            _   -> minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
 minTimeRun (Run (init, x: xs)) = minTimeRun (Run (init, xs))
 
 
