@@ -223,7 +223,7 @@ eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then 
     \run -> let cs1 = eval env as1 run in
         let cs2 = eval env as2 run in
             let now = getCurrentTime run in
-                if t < now then cs1 else cs2
+                if now < t then cs1 else cs2
 
 eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicate
     if evalPred p run
