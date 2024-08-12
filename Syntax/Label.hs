@@ -18,6 +18,13 @@ data Label id =
     deriving (Eq, Show)
 
 
+-- compare labels, for transformRun (append in dictionary)
+instance Ord (Label ConcID) where
+  compare LSplit{} LAuthReveal{} = LT
+  compare LAuthReveal{} LPutReveal{} = LT
+  compare LPutReveal{} LWithdraw{} = LT
+  compare LWithdraw{} LAuthControl{} = LT  
+
 
 {- CV function in BitML paper. Extract the ID (CID | VID) in a label.
     If label = Split / Withdraw / Put, return [id]
@@ -38,13 +45,3 @@ putOrSplit (LPutReveal _ _ _ id _) = True
 putOrSplit (LSplit id _) = True
 putOrSplit _ = False
 
-
-
--- main = do
-    -- -- cv tests passed!
-    -- let l1 = LWithdraw (Participant "A") (BCoins 1) (VarID "x1")
-    -- let l2 = LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))
-    -- let l3 = LSplit (CID (ConcID "x1")) (Split [])
-    -- print $ cv l1       -- Just [VarID "x1"]
-    -- print $ cv l2       -- Nothing
-    -- print $ cv l3       -- Just [CID (ConcID "x1")]

@@ -1,7 +1,13 @@
-module Syntax.Strategy where
+module Syntax.Strategy (
+    Condition (..)
+    , AbstractStrategy (..)
+    , StrategyResult (..)
+    , ConcreteStrategy
+) where
+    
 import Syntax.Common (Time(..), ID(..), VarID, ConcID, Pred, subTime)
 import Syntax.Label (Label)
-import Syntax.Run (Run(..), InitConfiguration (..))
+import Syntax.Run (Run(..))
 import NewSet 
 
 
@@ -31,6 +37,7 @@ data StrategyResult =
 
 -- TODO: CS: functions (Run -> EvalFail | StrategyResult)
 type ConcreteStrategy = Run -> StrategyResult 
+
 
 
 

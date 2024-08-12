@@ -3,6 +3,8 @@ module Semantic.Environment (
     , lookupEnv
     , updateEnv
     , emptyEnv
+    , envToList
+    , setFromListEnv
 ) where
 
 import Syntax.Common (Money (BCoins), Participant (Participant), ID (..), VarID, ConcID)

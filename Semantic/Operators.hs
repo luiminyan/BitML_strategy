@@ -1,10 +1,10 @@
 module Semantic.Operators where
-import Syntax.Label 
+import Syntax.Label
 import Syntax.Common (ID (..), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime, VarID (..), ConcID (..))
 import NewSet
-import Syntax.Contract (GuardedContract(..), Contract)
-import Syntax.Run (Run (Run), ConfigObject (..))
-import Syntax.Strategy (AbstractStrategy (..), ConcreteStrategy, StrategyResult (..), Condition (..))
+import Syntax.Contract 
+import Syntax.Run
+import Syntax.Strategy 
 import Semantic.Environment
 import qualified Data.Map as Map
 
@@ -66,7 +66,7 @@ minTimeRun (Run (init, x: xs)) = minTimeRun (Run (init, xs))
 -}
 updateAllSuccEnv :: Label ID -> [VarID] -> Environment -> Environment
 updateAllSuccEnv label succList env = updateHelper label succList env 0
-    where 
+    where
         updateHelper :: Label ID -> [VarID] -> Environment  -> Int -> Environment
         updateHelper LSplit {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
         updateHelper LPutReveal {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
@@ -77,34 +77,23 @@ updateAllSuccEnv label succList env = updateHelper label succList env 0
 type SuccIdDict = Map.Map Int ConcID        -- {index: concrete successor id}
 
 
-{- lookup a successor if from a label's successor list by index
--}
-getSuccByIndex :: Int -> SuccIdDict -> Maybe ConcID
-getSuccByIndex = Map.lookup
-
 
 {- get the successor(new) active contract id from run, after a label is executed
     run wit
 -}
 getSuccDictFromRun :: Label ConcID -> Run -> SuccIdDict
 getSuccDictFromRun label run =
-    case run of
-        Run (_, [(l, confList, _)]) ->
-            if label == l
-                then Map.fromList $ zip [0 ..] (getIdList confList)     -- [(index, succId)] -> {index: succId} 
-                else Map.empty                                          -- end of recursion: no successor found
-        Run (init, (lbf, confListBf, tbf) : (l, confList, _) : xs) ->
-            if label == lbf
-                then getSuccDictFromRun label (Run (init, [(lbf, confListBf, tbf)]))
-                
-                else if label == l
-                    then
-                        let idListBf = getIdList confListBf in          -- active contract ids in run, before label is applied
-                            let idList = getIdList confList in          -- ..., after label is applied
-                                let newId = filter (`notElem` idListBf) idList in
-                                    Map.fromList $ zip [0 ..] newId
-                    else getSuccDictFromRun label (Run (init, xs))
-    where getIdList confList = [cid | (ActiveContract c m cid) <- confList]     -- TODO: add withdraw later
+    let transRun = transformRun run in
+        case Map.lookup label transRun of
+            Just ((confi, ti), (confj, tj)) ->
+                let confiIdList = succIdList confi in
+                    let confjIdList = succIdList confj in
+                       let newIdList = filter (`notElem` confiIdList) confjIdList in
+                            Map.fromList $ zip [0 ..] newIdList
+            Nothing                         -> error "getSuccDictFromRun: predecessor Label does not exist in run!"
+    where succIdList = foldl (\acc x -> case x of
+                                            ActiveContract _ _ id -> acc ++ [id]
+                                            Deposit _ _ id -> acc ++ [id]) []
 
 
 
@@ -114,9 +103,9 @@ resolveID (VID toResolveId) env run =
     case lookupEnv toResolveId env of
         Just (predLabel, index) ->
             let succIdDict = getSuccDictFromRun (resolveLabelID predLabel env run) run in       -- successor Id list of a label in run, possibly empty
-                case getSuccByIndex index succIdDict of
+                case Map.lookup index succIdDict of         -- lookup successor by index
                     Just resolvedId -> resolvedId
-                    Nothing         -> error "resolveId: Id cannot be resolved!"
+                    Nothing         -> error "resolveId: ID cannot be resolved!"
         Nothing -> error "resolveID: ID not found in environment!"
 
 
@@ -124,7 +113,7 @@ resolveID (VID toResolveId) env run =
 {- resolve the id in a label, helper function for eval do Label & ExecutedThenElse -}
 resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
 resolveLabelID label env run =
-    case label of 
+    case label of
         LSplit id gc                -> LSplit (resolveID id env run) gc
         LAuthReveal p s             -> LAuthReveal p s
         LPutReveal ds secs p id gc  -> LPutReveal ds secs p (resolveID id env run) gc
@@ -140,6 +129,7 @@ executedLabel :: Label ConcID -> Run -> Bool
 executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
 
 
+
 -- eval Predicate
 {- get the length of a secret recursivly from run, to be used in if-then-else pred
     if secret revealed: Just sLen
@@ -150,23 +140,23 @@ getSecLen _ (Run (_, [])) = Nothing
 getSecLen s (Run (init, (_, confList, _) : xs)) =
     let revSecDict = Map.fromList [(sec, slen) | (RevealedSecret _ sec slen) <- confList] in
         case Map.lookup s revSecDict of
-            Just slen   -> Just slen 
+            Just slen   -> Just slen
             Nothing     -> getSecLen s (Run (init, xs))     -- recursivly check the next config tupel
 
 
 
 {-  evaluate an artihmetic expression based on a run
-    invalid expression: Nothing
+    invalid expression: Nothing  
     valid:              Just <Int>
 -}
 evalArithExpr :: E -> Run -> Maybe Int
 evalArithExpr e run =
     case e of
         EInt i      -> Just i
-        ELength s   -> getSecLen s run 
-        EAdd e1 e2  -> 
+        ELength s   -> getSecLen s run
+        EAdd e1 e2  ->
             case (evalArithExpr e1 run, evalArithExpr e2 run) of
-                (Just i1, Just i2)  -> Just $ (+) i1 i2 
+                (Just i1, Just i2)  -> Just $ (+) i1 i2
                 _                   -> Nothing
         ESub e1 e2  ->
             case (evalArithExpr e1 run, evalArithExpr e2 run) of
@@ -180,7 +170,7 @@ evalPred PTrue _            = True
 evalPred (PAnd p1 p2) run   = (&&) (evalPred p1 run) (evalPred p2 run)
 evalPred (POr p1 p2) run    = (||) (evalPred p1 run) (evalPred p2 run)
 evalPred (PNot p) run       = not (evalPred p run)
-evalPred (PEq e1 e2) run    = 
+evalPred (PEq e1 e2) run    =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (==) n1 n2
         _                   -> error ""         -- TODO: failure!
@@ -192,7 +182,7 @@ evalPred (PBtwn e1 e2 e3) run =
     case (evalArithExpr e1 run, evalArithExpr e2 run, evalArithExpr e3 run) of
         (Just n1, Just n2, Just n3) -> (&&) ((<=) n1 n2) ((<=) n2 n3)       -- n1 <= n2 <= n3
         _                           -> error ""
-evalPred (PLt e1 e2) run = 
+evalPred (PLt e1 e2) run =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (<=) n1 n2
         _                   -> error ""
@@ -218,7 +208,7 @@ eval env (Combination as1 as2) = \run ->
                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
                 (Delay t1, as2)             -> as2
                 (as1, Delay t2)             -> as1
-                (Actions s1, Actions s2)    -> 
+                (Actions s1, Actions s2)    ->
                     if isEmptySet s1                    -- possibly leads to Actions EmptySet => Delay min-time 
                         then Delay $ minTimeRun run
                         else Actions $ greedyActionsCombination s1 s2
@@ -227,7 +217,7 @@ eval env (ExecutedThenElse label succList as1 as2) = \run ->
     let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
         if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
             then eval env' as1 run                              -- label executed: update env
-            else eval env as2 run       
+            else eval env as2 run
 
 eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then as1 else as2
     \run -> let cs1 = eval env as1 run in
@@ -236,33 +226,29 @@ eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then 
                 if t < now then cs1 else cs2
 
 eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicate
-    if evalPred p run 
+    if evalPred p run
         then eval env as1 run
         else eval env as2 run
 
 
 
 
+-- main = do
+--     -- test greedyActionsCombination
+--     -- let s1 = fromListSet EmptySet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))]
+--     -- let s4 = fromListSet EmptySet [LSplit (ConcID "x1") (Split []), LPutReveal [] [] PTrue (ConcID "x2") (Split []), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
+--     -- print $ (greedyActionsCombination s1 s4) == (UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")])
+--     -- True
 
-
-
-
-main = do
-    -- test greedyActionsCombination
-    -- let s1 = fromListSet EmptySet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A"))]
-    -- let s4 = fromListSet EmptySet [LSplit (ConcID "x1") (Split []), LPutReveal [] [] PTrue (ConcID "x2") (Split []), LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")), LAuthReveal (Participant "A") (Secret "a")]
-    -- print $ (greedyActionsCombination s1 s4) == (UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")])
-    -- True
-
-    -- TODO: test minTimeRun
-    -- print $ minTimeG (Split [])   not allowed by BitML semantics
-    -- let env0 = emptyEnv
-    -- let varList = [VarID "x1", VarID "x2", VarID "x3"]
-    -- let label2 = LWithdraw (Participant "A") (BCoins 3) (VID (VarID "x1"))
-    -- let label1 = LSplit (CID (ConcID "x")) (Split [(BCoins 1, []), (BCoins 1, []), (BCoins 1, [])])
-    -- let env1 = updateAllSuccEnv label1 varList env0
-    -- print env1
-    -- let env2 = updateAllSuccEnv label2 [VarID "y2"] env1
-    -- print env2
-    print "Operators.hs"
+--     -- TODO: test minTimeRun
+--     -- print $ minTimeG (Split [])   not allowed by BitML semantics
+--     -- let env0 = emptyEnv
+--     -- let varList = [VarID "x1", VarID "x2", VarID "x3"]
+--     -- let label2 = LWithdraw (Participant "A") (BCoins 3) (VID (VarID "x1"))
+--     -- let label1 = LSplit (CID (ConcID "x")) (Split [(BCoins 1, []), (BCoins 1, []), (BCoins 1, [])])
+--     -- let env1 = updateAllSuccEnv label1 varList env0
+--     -- print env1
+--     -- let env2 = updateAllSuccEnv label2 [VarID "y2"] env1
+--     -- print env2
+--     print "Operators.hs"
 

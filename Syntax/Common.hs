@@ -19,9 +19,9 @@ instance Ord ID where
 
 newtype Participant = Participant String deriving (Show, Eq)  -- participants: A, B, C, D ...
 
-newtype Money = BCoins Int deriving (Eq, Show)
+newtype Money = BCoins Int deriving (Ord, Eq, Show)
 
-newtype Secret = Secret String deriving (Eq, Show)     -- Secrect SName
+newtype Secret = Secret String deriving (Ord, Eq, Show)     -- Secrect SName
 
 data Time = Time Int | TerminationTime deriving (Show)   
 
@@ -48,11 +48,6 @@ subTime (Time t1) time2 =
             (Time t2) -> Time $ t1 - t2
 
 
--- addTime :: Time -> Time -> Time
--- addTime TerminationTime _ = error "Invalid time addition: termination!"
--- addTime _ TerminationTime = error "Invalid time addition: termination!"
--- addTime (Time t1) (Time t2) = Time (t1 + t2)
-
 
 -- Logical predicates
 data Pred =
@@ -64,7 +59,7 @@ data Pred =
     | PNeq E E
     | PBtwn E E E
     | PLt E E
-    deriving (Eq, Show)
+    deriving (Ord, Eq, Show)
 
 
 -- Arithmetic expressions for logical predicates.
@@ -73,7 +68,7 @@ data E  = EInt Int
     | ELength Secret
     | EAdd E E
     | ESub E E
-    deriving (Eq, Show)                                
+    deriving (Ord, Eq, Show)                                
 
 
 -- main = do
