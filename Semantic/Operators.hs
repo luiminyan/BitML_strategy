@@ -219,7 +219,7 @@ eval env (ExecutedThenElse label succList as1 as2) = \run ->
             then eval env' as1 run                              -- label executed: update env
             else eval env as2 run
 
-eval env (IfThenElse (CheckTimeOut t) as1 as2) =            -- if before t then as1 else as2
+eval env (IfThenElse (BeforeTimeOut t) as1 as2) =            -- if before t then as1 else as2
     \run -> let cs1 = eval env as1 run in
         let cs2 = eval env as2 run in
             let now = getCurrentTime run in

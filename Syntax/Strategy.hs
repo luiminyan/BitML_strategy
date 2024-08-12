@@ -14,7 +14,7 @@ import NewSet
 -- data Operator = Operator    -- A place holder for operator
 
 
-data Condition = CheckTimeOut Time | Predicate Pred deriving (Show)      -- Condition will be used in strategy  
+data Condition = BeforeTimeOut Time | Predicate Pred deriving (Show)      -- Condition will be used in strategy  
 
 
 data AbstractStrategy =
