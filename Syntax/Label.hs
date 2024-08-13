@@ -4,7 +4,7 @@ module Syntax.Label (
     , putOrSplit
 ) where
 
-import Syntax.Common ( Secret, Money, Participant, ConcID, Pred )
+import Syntax.Common ( Secret, Money, Participant, ConcID, Pred, Time )
 import Syntax.Contract (GuardedContract)
 
 
@@ -15,6 +15,7 @@ data Label id =
     | LPutReveal [ConcID] [Secret] Pred id GuardedContract      -- right now: v. deposits have ConcID
     | LWithdraw Participant Money id
     | LAuthControl Participant id GuardedContract 
+    | LDelay Time
     deriving (Eq, Show)
 
 

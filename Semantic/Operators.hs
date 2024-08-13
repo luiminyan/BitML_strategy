@@ -128,6 +128,7 @@ resolveLabelID label env run =
         LPutReveal ds secs p id gc  -> LPutReveal ds secs p (resolveID id env run) gc
         LWithdraw p m id            -> LWithdraw p m (resolveID id env run)
         LAuthControl p id gc        -> LAuthControl p (resolveID id env run) gc
+        LDelay t                    -> LDelay t
 
 
 
@@ -136,6 +137,7 @@ resolveLabelID label env run =
 -}
 executedLabel :: Label ConcID -> Run -> Bool
 executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
+-- TODO: LDelay, alread in the run??
 
 
 
@@ -201,7 +203,9 @@ evalPred (PLt e1 e2) run =
 -- evaluation : see AbstractExpr -> ConcreteExpr in FP course
 eval :: Environment -> AbstractStrategy -> ConcreteStrategy
 eval env (Do label) = \run ->
-    Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
+    case label of
+        LDelay time -> Delay time
+        _           -> Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
 
 eval env DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
 
@@ -249,15 +253,6 @@ eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicat
 --     -- print $ (greedyActionsCombination s1 s4) == (UnordSet [LWithdraw (Participant "A") (BCoins 1) (ConcID "x1"),LAuthControl (Participant "A") (ConcID "x1") (Withdraw (Participant "A")),LPutReveal [] [] PTrue (ConcID "x2") (Split []),LAuthReveal (Participant "A") (Secret "a")])
 --     -- True
 
---     -- TODO: test minTimeRun
---     -- print $ minTimeG (Split [])   not allowed by BitML semantics
---     -- let env0 = emptyEnv
---     -- let varList = [VarID "x1", VarID "x2", VarID "x3"]
---     -- let label2 = LWithdraw (Participant "A") (BCoins 3) (VID (VarID "x1"))
---     -- let label1 = LSplit (CID (ConcID "x")) (Split [(BCoins 1, []), (BCoins 1, []), (BCoins 1, [])])
---     -- let env1 = updateAllSuccEnv label1 varList env0
---     -- print env1
---     -- let env2 = updateAllSuccEnv label2 [VarID "y2"] env1
---     -- print env2
+
 --     print "Operators.hs"
 
