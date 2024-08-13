@@ -11,8 +11,8 @@ instance Eq ID where
     _ == _ = False              -- CID /= VID
 
 instance Ord ID where
-    compare (CID (ConcID id1)) (VID (VarID id2)) = GT       -- assume ConcID > VarID
-    compare (VID (VarID id1)) (CID (ConcID id2)) = LT
+    compare (CID (ConcID _)) (VID (VarID _)) = GT       -- assume ConcID > VarID
+    compare (VID (VarID _)) (CID (ConcID _)) = LT
     compare (CID id1) (CID id2) = compare id1 id2
     compare (VID id1) (VID id2) = compare id1 id2
 

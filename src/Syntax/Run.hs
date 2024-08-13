@@ -37,12 +37,13 @@ newtype Run = Run ((Configuration, InitTime), [(Label ConcID, Configuration, Tim
 
 
 removeFirstList :: [a] -> [a]
-removeFirstList (x : xs) = xs
+removeFirstList [] = []
+removeFirstList (_ : xs) = xs
 
 
 removeLastList :: [a] -> [a]
 removeLastList []       = []
-removeLastList [a]      = []
+removeLastList [_]      = []
 removeLastList (x : xs) = removeLastList xs ++ [x] 
 
 
