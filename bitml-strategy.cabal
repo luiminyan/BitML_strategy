@@ -67,6 +67,8 @@ test-suite bitml-strategy-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      NewSetTest
+      OperatorTest
       PredicateTests
       Paths_bitml_strategy
   autogen-modules:
