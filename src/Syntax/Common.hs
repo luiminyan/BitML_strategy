@@ -1,4 +1,15 @@
-module Syntax.Common where
+module Syntax.Common (
+    ConcID (ConcID)
+    , VarID (VarID)
+    , ID (..)
+    , Participant (Participant)
+    , Money (BCoins)
+    , Secret (Secret)
+    , Time (..)
+    , Pred (..)
+    , E (..)
+    , subTime
+) where
 
 
 newtype ConcID = ConcID String deriving (Ord, Eq, Show)     -- ConcreteID: should exist in run
@@ -46,6 +57,7 @@ subTime (Time t1) time2 =
     else
         case time2 of
             (Time t2) -> Time $ t1 - t2
+            TerminationTime -> error "Invalid time substraction: negative time" 
 
 
 

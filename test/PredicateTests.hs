@@ -10,7 +10,7 @@ import Syntax.Common
 import Syntax.Run
 import Syntax.Label    
 import Semantic.Operators (evalPred, evalArithExpr, getSecLen)
-import qualified Data.Map as Map
+
 
 -- Sample Secrets and Runs for testing
 secretA :: Secret 

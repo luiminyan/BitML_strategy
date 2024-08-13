@@ -7,8 +7,7 @@ module Semantic.Environment (
     , setFromListEnv
 ) where
 
-import Syntax.Common (Money (BCoins), Participant (Participant), ID (..), VarID, ConcID)
-import Syntax.Contract (GuardedContract (Withdraw))
+import Syntax.Common 
 import Syntax.Label
 import qualified Data.Map as Map        -- avoid name clashes
 
@@ -36,16 +35,16 @@ lookupEnv = Map.lookup
     2. Environment loop: add successor which already exists in env as predecessor (VarID)
 -}
 updateEnv :: VarID -> (Label ID, Int) -> Environment -> Environment
-updateEnv id (label, index) env =
-    case lookupEnv id env of
+updateEnv succId (label, index) env =
+    case lookupEnv succId env of
         Just _  -> error "updateEnv: successor ID already exist!"
         Nothing ->
             let predLabelList = filter putOrSplit $ map (fst . snd) $ Map.toList env in
                 let predIDList = concatMap cv predLabelList in
                     let varIDList = [vid | (VID vid) <- predIDList] in          -- extract all var id from list
-                        if elem id varIDList 
+                        if elem succId varIDList 
                             then error "updateEnv: Environment loop" 
-                            else Map.insert id (label, index) env
+                            else Map.insert succId (label, index) env
 
 
 
@@ -70,10 +69,3 @@ setFromListEnv = Map.fromList
 envToList :: Environment -> [(VarID, (Label ID, Int))]
 envToList = Map.toList
 
--- main = do
---     let envEmpty = emptyEnv
---     -- print envEmpty 
---     let env01 = updateEnv (ID "x1") (LSplit (ID "x") (Withdraw (Participant "A")), 0) envEmpty
---     let env02 = setFromListEnv [(ID "y1", (LWithdraw (Participant "A") (BCoins 2) (ID "x"), 0))]
---     print $ lookupEnv (ID "x1") env01
---     print $ lookupEnv (ID "x1") env02
