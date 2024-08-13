@@ -1,6 +1,21 @@
-module Semantic.Operators where
+module Semantic.Operators (
+    greedyActionsCombination,
+    getCurrentTime,
+    minTimeC,
+    minTimeG,
+    minTimeRun,
+    updateAllSuccEnv,
+    getSuccListFromRun,
+    resolveID,
+    resolveLabelID,
+    executedLabel,
+    getSecLen,
+    evalArithExpr,
+    evalPred,
+    eval
+) where
 import Syntax.Label
-import Syntax.Common (ID (..), Participant (Participant), Money (BCoins), Pred (..), Secret (Secret), Time (..), E (..), subTime, VarID (..), ConcID (..))
+import Syntax.Common
 import NewSet
 import Syntax.Contract 
 import Syntax.Run
@@ -25,7 +40,7 @@ greedyActionsCombination s1 s2 =
 getCurrentTime :: Run -> Time
 getCurrentTime (Run (_, [])) = Time 0      -- init time = time 0
 getCurrentTime (Run (_, [(_, _, t)])) = t
-getCurrentTime (Run (init, x : xs)) = getCurrentTime (Run (init, xs))
+getCurrentTime (Run (initialConfig, _ : xs)) = getCurrentTime (Run (initialConfig, xs))
 
 
 
@@ -54,16 +69,15 @@ minTimeG (After t gc)
 {- minimum time from active contracts in run
     only initialized run: Termination time
     run without activeContracts in configuration: termination time
-    TODO: only last tuple in run, or the whole run?
 -}
 minTimeRun :: Run -> Time
 minTimeRun (Run (_, [])) = TerminationTime           -- The minimum of nothing is infinite!
 minTimeRun (Run (_, [(_, configList, _)])) =                                               -- last tuple in the run
-    let contractList = [c | (ActiveContract c m id) <- configList] in              -- list of contracts from each active contract
+    let contractList = [c | (ActiveContract c _ _) <- configList] in              -- list of contracts from each active contract
         case contractList of
             []  -> TerminationTime                  -- The minimum of nothing is infinite!
             _   -> minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
-minTimeRun (Run (init, x: xs)) = minTimeRun (Run (init, xs))
+minTimeRun (Run (initialConf, _ : xs)) = minTimeRun (Run (initialConf, xs))
 
 
 
@@ -77,32 +91,29 @@ updateAllSuccEnv :: Label ID -> [VarID] -> Environment -> Environment
 updateAllSuccEnv label succList env = updateHelper label succList env 0
     where
         updateHelper :: Label ID -> [VarID] -> Environment  -> Int -> Environment
-        updateHelper LSplit {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
-        updateHelper LPutReveal {} (x:xs) env index = updateHelper label xs (updateEnv x (label, index) env) (index + 1)
-        updateHelper _ [] env _ = env
+        updateHelper LSplit {} (x:xs) environment index = updateHelper label xs (updateEnv x (label, index) environment) (index + 1)
+        updateHelper LPutReveal {} (x:xs) environment index = updateHelper label xs (updateEnv x (label, index) environment) (index + 1)
+        updateHelper _ _ environment _ = environment
 
-
-
-type SuccIdDict = Map.Map Int ConcID        -- {index: concrete successor id}
 
 
 
 {- get the successor(new) active contract id from run, after a label is executed
     run wit
 -}
-getSuccDictFromRun :: Label ConcID -> Run -> SuccIdDict
-getSuccDictFromRun label run =
+getSuccListFromRun :: Label ConcID -> Run -> [ConcID]
+getSuccListFromRun label run =
     let transRun = transformRun run in
-        case Map.lookup label transRun of
-            Just ((confi, ti), (confj, tj)) ->
+        case searchTransRun label transRun of
+            Just ((confi, _), (confj, _)) ->
                 let confiIdList = succIdList confi in
                     let confjIdList = succIdList confj in
-                       let newIdList = filter (`notElem` confiIdList) confjIdList in
-                            Map.fromList $ zip [0 ..] newIdList
-            Nothing                         -> error "getSuccDictFromRun: predecessor Label does not exist in run!"
+                       filter (`notElem` confiIdList) confjIdList                             
+            Nothing                         -> error $ "getSuccListFromRun: predecessor label does not exist in run!" ++ show transRun
     where succIdList = foldl (\acc x -> case x of
-                                            ActiveContract _ _ id -> acc ++ [id]
-                                            Deposit _ _ id -> acc ++ [id]) []
+                                            ActiveContract _ _ contractId -> acc ++ [contractId]
+                                            Deposit _ _ depositID -> acc ++ [depositID]
+                                            _ -> acc) []
 
 
 
@@ -111,10 +122,10 @@ resolveID (CID concId) _ _ = concId
 resolveID (VID toResolveId) env run =
     case lookupEnv toResolveId env of
         Just (predLabel, index) ->
-            let succIdDict = getSuccDictFromRun (resolveLabelID predLabel env run) run in       -- successor Id list of a label in run, possibly empty
-                case Map.lookup index succIdDict of         -- lookup successor by index
-                    Just resolvedId -> resolvedId
-                    Nothing         -> error "resolveId: ID cannot be resolved!"
+            let succIdList = getSuccListFromRun (resolveLabelID predLabel env run) run in       -- successor Id list of a label in run, possibly empty   
+                if index <= length succIdList - 1 
+                    then succIdList !! index
+                    else error "resolveId: index out of range!"
         Nothing -> error "resolveID: ID not found in environment!"
 
 
@@ -123,12 +134,12 @@ resolveID (VID toResolveId) env run =
 resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
 resolveLabelID label env run =
     case label of
-        LSplit id gc                -> LSplit (resolveID id env run) gc
-        LAuthReveal p s             -> LAuthReveal p s
-        LPutReveal ds secs p id gc  -> LPutReveal ds secs p (resolveID id env run) gc
-        LWithdraw p m id            -> LWithdraw p m (resolveID id env run)
-        LAuthControl p id gc        -> LAuthControl p (resolveID id env run) gc
-        LDelay t                    -> LDelay t
+        LSplit labelId gc               -> LSplit (resolveID labelId env run) gc
+        LAuthReveal p s                 -> LAuthReveal p s
+        LPutReveal ds secs p labelId gc -> LPutReveal ds secs p (resolveID labelId env run) gc
+        LWithdraw p m labelId           -> LWithdraw p m (resolveID labelId env run)
+        LAuthControl p labelId gc       -> LAuthControl p (resolveID labelId env run) gc
+        LDelay t                        -> LDelay t
 
 
 
@@ -136,7 +147,7 @@ resolveLabelID label env run =
     init-run: false
 -}
 executedLabel :: Label ConcID -> Run -> Bool
-executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
+executedLabel label (Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
 -- TODO: LDelay, alread in the run??
 
 
@@ -148,11 +159,11 @@ executedLabel label run@(Run (_, tuples)) = any (\(l, _, _) -> l == label) tuple
 -}
 getSecLen :: Secret -> Run -> Maybe Int
 getSecLen _ (Run (_, [])) = Nothing
-getSecLen s (Run (init, (_, confList, _) : xs)) =
+getSecLen s (Run (initialConfig, (_, confList, _) : xs)) =
     let revSecDict = Map.fromList [(sec, slen) | (RevealedSecret _ sec slen) <- confList] in
         case Map.lookup s revSecDict of
             Just slen   -> Just slen
-            Nothing     -> getSecLen s (Run (init, xs))     -- recursivly check the next config tupel
+            Nothing     -> getSecLen s (Run (initialConfig, xs))     -- recursivly check the next config tupel
 
 
 
@@ -207,30 +218,34 @@ eval env (Do label) = \run ->
         LDelay time -> Delay time
         _           -> Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
 
-eval env DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+eval _ DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
 
-eval env (WaitUntil (Time d)) =
+eval _ (WaitUntil (Time d)) =
     \run -> let now = getCurrentTime run in
-        if now < Time d then Delay $ subTime (Time d) now
-        else error "Invalid strategy: time to wait already past"
+        if now < Time d 
+            then Delay $ subTime (Time d) now
+            else error "Invalid strategy: time to wait already past"
+eval _ (WaitUntil TerminationTime) = \_ -> Delay TerminationTime
 
 eval env (Combination as1 as2) = \run ->
     let cs1 = eval env as1 in               -- as1 and as2 are parallel evaluated
         let cs2 = eval env as2 in
             case (cs1 run, cs2 run) of
                 (Delay t1, Delay t2)        -> Delay $ min t1 t2
-                (Delay t1, as2)             -> as2
-                (as1, Delay t2)             -> as1
+                (Delay _, actionsList2)     -> actionsList2 
+                (actionsList1, Delay _)     -> actionsList1
                 (Actions s1, Actions s2)    ->
                     if isEmptySet s1                    -- possibly leads to Actions EmptySet => Delay min-time 
                         then Delay $ minTimeRun run
                         else Actions $ greedyActionsCombination s1 s2
 
 eval env (ExecutedThenElse label succList as1 as2) = \run ->
-    let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
-        if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
-            then eval env' as1 run                              -- label executed: update env
-            else eval env as2 run
+    case label of
+        LDelay _ -> error "eval ExecutedThenElse: LDelay cannot be applied here"
+        _ -> let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
+                if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
+                    then eval env' as1 run                              -- label executed: update env
+                    else eval env as2 run
 
 eval env (IfThenElse (BeforeTimeOut t) as1 as2) =            -- if before t then as1 else as2
     \run -> let cs1 = eval env as1 run in
@@ -242,6 +257,8 @@ eval env (IfThenElse (Predicate p) as1 as2) = \run ->       -- evaluate predicat
     if evalPred p run
         then eval env as1 run
         else eval env as2 run
+
+
 
 
 

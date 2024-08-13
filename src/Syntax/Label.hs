@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 module Syntax.Label (
     Label (..)
     , cv
@@ -20,12 +19,6 @@ data Label id =
     deriving (Eq, Show)
 
 
--- compare labels, for transformRun (append in dictionary)
-instance Ord (Label ConcID) where
-  compare LSplit{} LAuthReveal{} = LT
-  compare LAuthReveal{} LPutReveal{} = LT
-  compare LPutReveal{} LWithdraw{} = LT
-  compare LWithdraw{} LAuthControl{} = LT  
 
 
 {- CV function in BitML paper. Extract the ID (CID | VID) in a label.
@@ -35,15 +28,15 @@ instance Ord (Label ConcID) where
 cv :: Label id -> [id]
 cv l =
     case l of
-        LSplit id _ -> [id]
-        LPutReveal _ _ _ id _ -> [id]
-        LWithdraw _ _ id -> [id]
+        LSplit labelId _ -> [labelId]
+        LPutReveal _ _ _ labelId _ -> [labelId]
+        LWithdraw _ _ labelId -> [labelId]
         _ -> []
 
 
 
 putOrSplit :: Label id -> Bool
-putOrSplit (LPutReveal _ _ _ id _) = True
-putOrSplit (LSplit id _) = True
+putOrSplit LPutReveal {} = True
+putOrSplit LSplit {} = True
 putOrSplit _ = False
 
