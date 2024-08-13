@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Syntax.Label (
     Label (..)
     , cv
