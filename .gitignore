@@ -1,0 +1,25 @@
+.stack-work/
+*~
+
+# Cabal
+dist/
+dist-newstyle/
+cabal.sandbox.config
+cabal.project.local
+.virthualenv
+
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.a
+
+CHANGELOG.md
+
+# macOS-related
+.DS_Store
+
+# VSCode files
+.vscode/
