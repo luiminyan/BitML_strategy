@@ -1,6 +1,5 @@
-module Examples.RunTimedCommitment (
-    contractTimedCommitment
-    , run_tc_0
+module Examples.TimedCommitment.TCRuns (
+    run_tc_0
     , runTCReva
     , runTCPuta
     , runTCWithdrawB
@@ -10,12 +9,9 @@ import Syntax.Run
 import Syntax.Common
 import Syntax.Contract
 import Syntax.Label
+import Examples.TimedCommitment.TCContract
 
-contractTimedCommitment :: [GuardedContract]
-contractTimedCommitment = [
-    PutReveal [] [Secret "a"] PTrue [Withdraw (Participant "A")]
-    , After (Time 2) (Withdraw (Participant "B"))
-    ]
+
 
 run_tc_0 :: Run
 run_tc_0 = Run (([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], InitTime), [])

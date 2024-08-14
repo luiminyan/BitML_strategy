@@ -1,7 +1,7 @@
 module Main (main) where
 
-import Examples.RunTimedCommitment
-import Examples.TimedCommitment
+import Examples.TimedCommitment.TCRuns
+import Examples.TimedCommitment.TCStrategies
 import Semantic.Operators
 import Semantic.Environment
 

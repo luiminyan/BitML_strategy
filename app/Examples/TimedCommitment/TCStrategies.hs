@@ -1,4 +1,4 @@
-module Examples.TimedCommitment (
+module Examples.TimedCommitment.TCStrategies (
     paTimedCommitment
     , singleDoLabel
     , singleDoNothing
