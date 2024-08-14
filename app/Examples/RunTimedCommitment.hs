@@ -39,7 +39,7 @@ runTCPuta = Run (
                         , [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")
                             , RevealedSecret (Participant "A") (Secret "a") 10]
                         , Time 0)
-                        , (LPutReveal [] [Secret "a"] PTrue (ConcID "tc") (Withdraw (Participant "A"))
+                        , (LPutReveal [] [Secret "a"] PTrue (ConcID "tc") [Withdraw (Participant "A")]
                             , [ActiveContract [Withdraw (Participant "A")] (BCoins 1) (ConcID "x")
                                 , RevealedSecret (Participant "A") (Secret "a") 10]
                             , Time 0

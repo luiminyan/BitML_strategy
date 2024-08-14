@@ -14,12 +14,12 @@ paTimedCommitment :: AbstractStrategy
 paTimedCommitment = 
     IfThenElse (BeforeTimeOut (Time 2)) 
         (ExecutedThenElse (LAuthReveal (Participant "A") (Secret "a")) [] 
-            (ExecutedThenElse (LPutReveal [] [Secret "a"] PTrue (CID (ConcID "tc")) (Withdraw (Participant "A"))) [VarID "tc'"] 
+            (ExecutedThenElse (LPutReveal [] [Secret "a"] PTrue (CID (ConcID "tc")) [Withdraw (Participant "A")]) [VarID "tc'"] 
                 (ExecutedThenElse (LWithdraw (Participant "A") (BCoins 1) (VID (VarID "tc'"))) []
                     DoNothing 
                     (Do (LWithdraw (Participant "A") (BCoins 1) (VID (VarID "tc'"))))
                 )
-                (Do (LPutReveal [] [Secret "a"] PTrue (CID (ConcID "tc")) (Withdraw (Participant "A"))))
+                (Do (LPutReveal [] [Secret "a"] PTrue (CID (ConcID "tc")) [Withdraw (Participant "A")]))
             ) 
             (Do (LAuthReveal (Participant "A") (Secret "a")))
         ) 

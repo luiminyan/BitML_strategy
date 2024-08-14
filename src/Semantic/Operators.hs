@@ -134,7 +134,7 @@ resolveID (VID toResolveId) env run =
 resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
 resolveLabelID label env run =
     case label of
-        LSplit labelId gc               -> LSplit (resolveID labelId env run) gc
+        LSplit labelId c               -> LSplit (resolveID labelId env run) c
         LAuthReveal p s                 -> LAuthReveal p s
         LPutReveal ds secs p labelId gc -> LPutReveal ds secs p (resolveID labelId env run) gc
         LWithdraw p m labelId           -> LWithdraw p m (resolveID labelId env run)
@@ -195,19 +195,19 @@ evalPred (PNot p) run       = not (evalPred p run)
 evalPred (PEq e1 e2) run    =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (==) n1 n2
-        _                   -> error ""         -- TODO: failure!
+        _                   -> error "evalPred: predicate not evaluatable!"         -- TODO: failure!
 evalPred (PNeq e1 e2) run   =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (/=) n1 n2
-        _                   -> error ""         -- TODO: failure!
+        _                   -> error "evalPred: predicate not evaluatable!"         -- TODO: failure!
 evalPred (PBtwn e1 e2 e3) run =
     case (evalArithExpr e1 run, evalArithExpr e2 run, evalArithExpr e3 run) of
         (Just n1, Just n2, Just n3) -> (&&) ((<=) n1 n2) ((<=) n2 n3)       -- n1 <= n2 <= n3
-        _                           -> error ""
+        _                           -> error "evalPred: predicate not evaluatable!"
 evalPred (PLt e1 e2) run =
     case (evalArithExpr e1 run, evalArithExpr e2 run) of
         (Just n1, Just n2)  -> (<=) n1 n2
-        _                   -> error ""
+        _                   -> error "evalPred: predicate not evaluatable!"
 
 
 
