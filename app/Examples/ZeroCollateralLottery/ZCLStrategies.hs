@@ -13,13 +13,13 @@ paZCLStrategy =
     IfThenElse (BeforeTimeOut timeD)
         (ExecutedThenElse (LAuthReveal (Participant "PB") (Secret "b")) []
             (IfThenElse (Predicate (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)))
-                (ExecutedThenElse (LPutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) (CID (ConcID "zcl")) zclCAftREvb) [VarID "x"] 
+                (ExecutedThenElse (LPutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) (CID (ConcID "zcl")) zclCAftRevb) [VarID "x"] 
                     (ExecutedThenElse (LAuthReveal (Participant "PA") (Secret "a")) [] 
                         (IfThenElse (Predicate (PEq (ELength (Secret "a")) (ELength (Secret "b")))) 
                             (ExecutedThenElse (LPutReveal [] [Secret "a"] (PEq (ELength (Secret "a")) (ELength (Secret "b"))) (VID (VarID "x")) [zclGRevaEq]) [VarID "y"] 
-                                (ExecutedThenElse (LWithdraw (Participant "PA") (BCoins 2) (VID (VarID "x"))) [] 
+                                (ExecutedThenElse (LWithdraw (Participant "PA") (BCoins 2) (VID (VarID "y"))) [] 
                                     DoNothing 
-                                    (Do (LWithdraw (Participant "PA") (BCoins 2) (VID (VarID "x"))))
+                                    (Do (LWithdraw (Participant "PA") (BCoins 2) (VID (VarID "y"))))
                                 )
                                 (Do (LPutReveal [] [Secret "a"] (PEq (ELength (Secret "a")) (ELength (Secret "b"))) (VID (VarID "x")) [zclGRevaEq]))
                             ) 
@@ -27,7 +27,7 @@ paZCLStrategy =
                         ) 
                         (Do (LAuthReveal (Participant "PA") (Secret "a")))
                     ) 
-                    (Do (LPutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) (CID (ConcID "zcl")) zclCAftREvb))
+                    (Do (LPutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) (CID (ConcID "zcl")) zclCAftRevb))
                 )
                 DoNothing
             )
