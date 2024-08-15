@@ -31,10 +31,7 @@ data ConfigObject =
 type Configuration = [ConfigObject]
 
 
-data InitTime = InitTime deriving (Show)        -- initTime = Time 0
-
-
-newtype Run = Run ((Configuration, InitTime), [(Label ConcID, Configuration, Time)]) deriving (Show)    -- Run (InitConfig, [(label, ConfigList, time)])     
+newtype Run = Run (Configuration, [(Label ConcID, Configuration, Time)]) deriving (Show)    -- Run (InitConfig, [(label, ConfigList, time)])     
 
 
 
