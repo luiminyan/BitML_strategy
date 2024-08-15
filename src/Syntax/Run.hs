@@ -6,7 +6,6 @@ Description : Defines BitML run, config-objects and configuration
 module Syntax.Run (
     ConfigObject (..)
     , Configuration
-    , InitTime (..)
     , Run (..)
     , removeLastList
     , transformRun
@@ -47,7 +46,7 @@ removeLastList (x : xs) = removeLastList xs ++ [x]
 -}
 transformRun :: Run -> [(Label ConcID, ((Configuration, Time), (Configuration, Time)))]
 transformRun (Run (_, [])) = []
-transformRun (Run ((initConf, _), tplList@((label1, confList1, time1) : xsi)))  =
+transformRun (Run (initConf, tplList@((label1, confList1, time1) : xsi)))  =
     case length tplList of
         1   -> fstPairList
         _   ->
