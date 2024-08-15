@@ -5,6 +5,8 @@ module Examples.ZeroCollateralLottery.ZCLRuns (
     , zclRunReva
     , zclRunPuta
     , zclRunWithdrawA
+    , zclRunAfterD
+    , zclRunAftWithdrawA
 ) where
 
 import Examples.ZeroCollateralLottery.ZCLContract
@@ -15,17 +17,17 @@ import Syntax.Common (Secret(Secret))
 import Syntax.Contract (GuardedContract(Withdraw))
 
 
-pa :: Participant
-pa = Participant "PA"
+-- pa :: Participant
+-- pa = Participant "PA"
 
-pb :: Participant
-pb = Participant "PB"
+-- pb :: Participant
+-- pb = Participant "PB"
 
-sec_a :: Secret
-sec_a = Secret "a"
+-- sec_a :: Secret
+-- sec_a = Secret "a"
 
-sec_b :: Secret
-sec_b = Secret "b"
+-- sec_b :: Secret
+-- sec_b = Secret "b"
 
 lenSeca :: Int
 lenSeca = 1
@@ -50,3 +52,9 @@ zclRunPuta = appendRun (LPutReveal [] [sec_a] (PEq (ELength sec_a) (ELength sec_
 
 zclRunWithdrawA :: Run
 zclRunWithdrawA = appendRun (LWithdraw pa (BCoins 2) (ConcID "zcl-puta")) [RevealedSecret pb sec_b lenSecb, RevealedSecret pa sec_a lenSeca, Deposit pa (BCoins 2) (ConcID "depo-pa-1")] (Time 0) zclRunPuta
+
+zclRunAfterD :: Run
+zclRunAfterD = appendRun (LDelay timeD) [ActiveContract zclContract (BCoins 2) (ConcID "zcl")] timeD zclRun0
+
+zclRunAftWithdrawA :: Run
+zclRunAftWithdrawA = appendRun (LWithdraw pa (BCoins 2) (ConcID "zcl")) [Deposit pa (BCoins 2) (ConcID "depo-pa-1*")] timeD zclRunAfterD
