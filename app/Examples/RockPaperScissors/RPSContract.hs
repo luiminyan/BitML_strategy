@@ -1,5 +1,9 @@
 module Examples.RockPaperScissors.RPSContract (
-    timeD
+    pa
+    , pb
+    , secA
+    , secB
+    , timeD
     , win
     , rpsContract
     , rpsCon0
@@ -13,6 +17,17 @@ module Examples.RockPaperScissors.RPSContract (
 import Syntax.Common
 import Syntax.Contract
 
+pa :: Participant
+pa = Participant "PA"
+
+pb :: Participant
+pb = Participant "PB"
+
+secA :: Secret
+secA = Secret "a"
+
+secB :: Secret
+secB = Secret "b"
 
 timeD :: Time
 timeD = Time 5      -- Time d in BitML paper
@@ -28,20 +43,20 @@ rpsContract :: Contract
 rpsContract = [Split [(BCoins 2, rpsCon0), (BCoins 2, rpsCon1), (BCoins 2, rpsCon2)]]
                                                                     
 rpsCon0 :: Contract
-rpsCon0 = [PutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 2)) [Withdraw (Participant "PB")], After timeD (Withdraw (Participant "PA"))]
+rpsCon0 = [PutReveal [] [secB] (PBtwn (EInt 0) (ELength secB) (EInt 2)) [Withdraw pb], After timeD (Withdraw pa)]
 
 rpsCon1 :: Contract
-rpsCon1 = [PutReveal [] [Secret "a"] (PBtwn (EInt 0) (ELength (Secret "a")) (EInt 2)) [Withdraw (Participant "PA")], After timeD (Withdraw (Participant "PB"))]
+rpsCon1 = [PutReveal [] [secA] (PBtwn (EInt 0) (ELength secA) (EInt 2)) [Withdraw pa], After timeD (Withdraw pb)]
 
 rpsCon2 :: Contract
-rpsCon2 = [PutReveal [] [Secret "a", Secret "b"] (win (Secret "a") (Secret "b")) [Withdraw (Participant "PA")], PutReveal [] [Secret "a", Secret "b"] (win (Secret "b") (Secret "a")) [Withdraw (Participant "PB")], PutReveal [] [Secret "a", Secret "b"] (PEq (ELength (Secret "a")) (ELength (Secret "b"))) [Split [(BCoins 1, [Withdraw (Participant "PA")]), (BCoins 1, [Withdraw (Participant "PB")])]]]
+rpsCon2 = [PutReveal [] [secA, secB] (win secA secB) [Withdraw pa], PutReveal [] [secA, secB] (win secB secA) [Withdraw pb], PutReveal [] [secA, secB] (PEq (ELength secA) (ELength secB)) [Split [(BCoins 1, [Withdraw pa]), (BCoins 1, [Withdraw pb])]]]
 
 rpsCon2Split :: Contract
-rpsCon2Split = [Split [(BCoins 1, [Withdraw (Participant "PA")]), (BCoins 1, [Withdraw (Participant "PB")])]]
+rpsCon2Split = [Split [(BCoins 1, [Withdraw pa]), (BCoins 1, [Withdraw pb])]]
 
 gConWithdrawPA :: GuardedContract
-gConWithdrawPA = Withdraw (Participant "PA")
+gConWithdrawPA = Withdraw pa
 
 gConWithdrawPB :: GuardedContract
-gConWithdrawPB = Withdraw (Participant "PB")
+gConWithdrawPB = Withdraw pb
 
