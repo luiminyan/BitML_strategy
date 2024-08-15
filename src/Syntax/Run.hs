@@ -7,7 +7,6 @@ module Syntax.Run (
     ConfigObject (..)
     , Configuration
     , Run (..)
-    , removeLastList
     , transformRun
     , searchTransRun
     , appendRun
@@ -24,20 +23,13 @@ data ConfigObject =
     | AuthTakeBranch Participant ConcID GuardedContract     -- Authorization
     | SecretCommit Participant Secret
     | RevealedSecret  Participant Secret Int
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 type Configuration = [ConfigObject]
 
 
-newtype Run = Run (Configuration, [(Label ConcID, Configuration, Time)]) deriving (Show)    -- Run (InitConfig, [(label, ConfigList, time)])     
-
-
-
-removeLastList :: [a] -> [a]
-removeLastList []       = []
-removeLastList [_]      = []
-removeLastList (x : xs) = removeLastList xs ++ [x] 
+newtype Run = Run (Configuration, [(Label ConcID, Configuration, Time)]) deriving (Eq, Show)    -- Run (InitConfig, [(label, ConfigList, time)])     
 
 
 
@@ -50,10 +42,11 @@ transformRun (Run (initConf, tplList@((label1, confList1, time1) : xsi)))  =
     case length tplList of
         1   -> fstPairList
         _   ->
-            let configsList = zip [(c, t) | (_, c, t) <- removeLastList tplList] [(c, t) | (_, c, t) <- xsi] in     -- [((bf_conf, t), (aft_conf, t'))] 
+            let configsList = zip [(c, t) | (_, c, t) <- init tplList] [(c, t) | (_, c, t) <- xsi] in     -- (noLast, noHead)    [((bf_conf, t), (aft_conf, t'))] 
                 let labelConfigsList = zip [l | (l, _, _) <- xsi] configsList in                                -- [(label, ((confi, t1), (confj, tj)))]
                     foldl (\acc labelConfTupel -> acc ++ [labelConfTupel]) fstPairList labelConfigsList
     where fstPairList = [(label1, ((initConf, Time 0), (confList1, time1)))]        -- {label1: ((initConf, Time 0), (confList1, time1))}
+
 
 
 
