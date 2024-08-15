@@ -11,6 +11,7 @@ module Syntax.Run (
     , removeLastList
     , transformRun
     , searchTransRun
+    , appendRun
 ) where
 import Syntax.Label (Label)
 import Syntax.Common ( Secret, Money, Participant, ConcID, Time(..) )
@@ -65,4 +66,10 @@ transformRun (Run ((initConf, _), tplList@((label1, confList1, time1) : xsi)))  
     else: Nothing
 -}
 searchTransRun :: Label ConcID -> [(Label ConcID, ((Configuration, Time), (Configuration, Time)))] -> Maybe ((Configuration, Time), (Configuration, Time))
-searchTransRun label transRun = fmap snd (find (\(l, _) -> label == l) transRun)   
+searchTransRun label transRun = fmap snd (find (\(l, _) -> label == l) transRun)
+
+
+{- append run with new (label, Configuration, time)
+-}
+appendRun :: Label ConcID -> Configuration -> Time -> Run -> Run
+appendRun label configuration time (Run (initConfig, tupulList)) = Run (initConfig, tupulList ++ [(label, configuration, time)])
