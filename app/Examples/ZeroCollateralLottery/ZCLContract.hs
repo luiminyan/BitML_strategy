@@ -2,7 +2,7 @@ module Examples.ZeroCollateralLottery.ZCLContract (
     timeD
     , timeD'
     , zclContract
-    , zclCAftREvb
+    , zclCAftRevb
     , zclGRevaEq
     , zclGRevaNeq
     , zclGAfterD
@@ -21,10 +21,10 @@ timeD' :: Time
 timeD' = Time 5     -- d' > d
 
 zclContract :: Contract
-zclContract = [PutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) zclCAftREvb, After timeD (Withdraw (Participant "PA"))]
+zclContract = [PutReveal [] [Secret "b"] (PBtwn (EInt 0) (ELength (Secret "b")) (EInt 1)) zclCAftRevb, After timeD (Withdraw (Participant "PA"))]
 
-zclCAftREvb :: Contract
-zclCAftREvb = [zclGRevaEq, zclGRevaNeq, zclGAfterD]
+zclCAftRevb :: Contract
+zclCAftRevb = [zclGRevaEq, zclGRevaNeq, zclGAfterD]
 
 zclGRevaEq :: GuardedContract
 zclGRevaEq = PutReveal [] [Secret "a"] (PEq (ELength (Secret "a")) (ELength (Secret "b"))) [zclGWithdrawA]
