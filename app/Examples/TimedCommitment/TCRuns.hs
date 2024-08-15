@@ -14,11 +14,11 @@ import Examples.TimedCommitment.TCContract
 
 
 run_tc_0 :: Run
-run_tc_0 = Run (([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], InitTime), [])
+run_tc_0 = Run ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], [])
 
 runTCReva :: Run
 runTCReva = Run (
-                    ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], InitTime)
+                    [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")]
                     , [
                         (LAuthReveal (Participant "A") (Secret "a")
                         , [ActiveContract [PutReveal [] [Secret "a"] PTrue [Withdraw (Participant "A")]] (BCoins 1) (ConcID "tc")
@@ -29,7 +29,7 @@ runTCReva = Run (
 
 runTCPuta :: Run
 runTCPuta = Run (
-                    ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], InitTime)
+                    [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")]
                     , [
                         (LAuthReveal (Participant "A") (Secret "a")
                         , [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")
@@ -44,5 +44,4 @@ runTCPuta = Run (
                 )
 
 runTCWithdrawB :: Run
-runTCWithdrawB = Run (([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], InitTime)
-            , [(LDelay (Time 2), [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], Time 2)])
+runTCWithdrawB = Run ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], [(LDelay (Time 2), [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], Time 2)])
