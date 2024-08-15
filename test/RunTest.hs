@@ -67,5 +67,11 @@ searchTransRunTest = TestList [
     ]  
 
 
+appendRunTest :: Test
+appendRunTest = TestList [
+        TestCase (assertEqual "Append init run" run1 (appendRun (LAuthReveal (Participant "A") (Secret "a")) [ActiveContract [] (BCoins 1) (ConcID "tc"), RevealedSecret (Participant "A") (Secret "a") 10] (Time 0) run0))
+        , TestCase (assertEqual "Transform run with one label" run2 (appendRun (LPutReveal [] [Secret "a"] PTrue (ConcID "tc") [Withdraw (Participant "A")]) [ActiveContract [] (BCoins 1) (ConcID "x"), RevealedSecret (Participant "A") (Secret "a") 10] (Time 0) run1))
+    ]
+
 runTestList :: Test
-runTestList = TestList [transformRunTest, searchTransRunTest]
+runTestList = TestList [transformRunTest, searchTransRunTest, appendRunTest]
