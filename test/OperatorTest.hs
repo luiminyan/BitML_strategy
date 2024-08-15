@@ -27,17 +27,17 @@ contractWithdrawB = [Withdraw (Participant "PB")]
 
 
 run0 :: Run
-run0 = Run (([ActiveContract testContract (BCoins 3) (ConcID "x")], InitTime), [])
+run0 = Run ([ActiveContract testContract (BCoins 3) (ConcID "x")], [])
 
 run1 :: Run
-run1 = Run (([ActiveContract testContract (BCoins 3) (ConcID "x")], InitTime), [
+run1 = Run ([ActiveContract testContract (BCoins 3) (ConcID "x")], [
                 (LPutReveal [] [] PTrue (ConcID "x") testContractSplit
                     , [ActiveContract testContractSplit (BCoins 3) (ConcID "conc-y")]
                     , Time 0)
             ])
             
 run2 :: Run
-run2 = Run (([ActiveContract testContract (BCoins 3) (ConcID "x")], InitTime), [
+run2 = Run ([ActiveContract testContract (BCoins 3) (ConcID "x")], [
                 (LPutReveal [] [] PTrue (ConcID "x") testContractSplit
                     , [ActiveContract testContractSplit (BCoins 3) (ConcID "conc-y")]
                     , Time 0),
@@ -47,7 +47,7 @@ run2 = Run (([ActiveContract testContract (BCoins 3) (ConcID "x")], InitTime), [
             ])
 
 run3a :: Run
-run3a = Run (([ActiveContract testContract (BCoins 3) (ConcID "x")], InitTime), [
+run3a = Run ([ActiveContract testContract (BCoins 3) (ConcID "x")], [
                 (LPutReveal [] [] PTrue (ConcID "x") testContractSplit
                     , [ActiveContract testContractSplit (BCoins 3) (ConcID "conc-y")]
                     , Time 0),

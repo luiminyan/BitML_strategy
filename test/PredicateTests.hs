@@ -22,11 +22,11 @@ secretB = Secret "b"
 
 -- Run without secret
 runNoSecret :: Run
-runNoSecret = Run (([], InitTime), [(LDelay (Time 1), [ActiveContract [PutReveal [] [secretA, secretB] PTrue []] (BCoins 1) (ConcID "x")], Time 1)])
+runNoSecret = Run ([], [(LDelay (Time 1), [ActiveContract [PutReveal [] [secretA, secretB] PTrue []] (BCoins 1) (ConcID "x")], Time 1)])
 
 -- Run with secrets a and b
 runWithSecrets :: Run
-runWithSecrets = Run (([], InitTime), 
+runWithSecrets = Run ([], 
     [ (LAuthReveal (Participant "A") secretA, [RevealedSecret (Participant "A") secretA 5], Time 0)
     , (LAuthReveal (Participant "B") secretB, [RevealedSecret (Participant "A") secretA 5, RevealedSecret (Participant "B") secretB 10], Time 0)
     ])
