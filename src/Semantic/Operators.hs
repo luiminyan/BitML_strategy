@@ -50,7 +50,6 @@ minTimeC [] = TerminationTime           -- The minimum of nothing is infinite!
 minTimeC contract = minimum $ map minTimeG contract
 
 
-
 {- minimum time of a guarded contract
     Withdraw: termintates the current active contract, returns termination time
     After t: minimum between t and min-time from the followed up guarded contract
@@ -66,18 +65,30 @@ minTimeG (After t gc)
     | otherwise = t
 
 
-{- minimum time from active contracts in run
-    only initialized run: Termination time
-    run without activeContracts in configuration: termination time
+{- minimum time from Configuration 
+    without active contract: TerminationTime (The minimum of nothing is infinite!)
+    else: minimum of minTime from all contracts
+-}
+minTimeConfiguration :: Configuration -> Time
+minTimeConfiguration confList = 
+    case contractList of
+        []  -> TerminationTime     -- The minimum of nothing is infinite!
+        _   -> minimum $ map minTimeC contractList
+    where contractList = [c | (ActiveContract c _ _) <- confList]
+
+
+{- minimum time in a run
+    only initialized run: minTime from initConfig
+    else: minTime from the last Configuration (in the last tuple)
 -}
 minTimeRun :: Run -> Time
-minTimeRun (Run (_, [])) = TerminationTime           -- The minimum of nothing is infinite!
-minTimeRun (Run (_, [(_, configList, _)])) =                                               -- last tuple in the run
-    let contractList = [c | (ActiveContract c _ _) <- configList] in              -- list of contracts from each active contract
-        case contractList of
-            []  -> TerminationTime                  -- The minimum of nothing is infinite!
-            _   -> minimum $ map minTimeC contractList                                                             -- the minimum time in all contracts
-minTimeRun (Run (initialConf, _ : xs)) = minTimeRun (Run (initialConf, xs))
+minTimeRun run =
+    case run of
+        Run (initConf, []) -> minTimeConfiguration initConf
+        Run (_, [(_, configList, _)]) -> minTimeConfiguration configList   
+        Run (initialConf, _ : xs) -> minTimeRun (Run (initialConf, xs))
+   
+
 
 
 
