@@ -49,8 +49,18 @@ library
 executable bitml-strategy-exe
   main-is: Main.hs
   other-modules:
-      Examples.RunTimedCommitment
-      Examples.TimedCommitment
+      Examples.Escrow.EscrowContract
+      Examples.Escrow.EscrowRuns
+      Examples.Escrow.EscrowStrategies
+      Examples.RockPaperScissors.RPSContract
+      Examples.RockPaperScissors.RPSRuns
+      Examples.RockPaperScissors.RPSStrategies
+      Examples.TimedCommitment.TCContract
+      Examples.TimedCommitment.TCRuns
+      Examples.TimedCommitment.TCStrategies
+      Examples.ZeroCollateralLottery.ZCLContract
+      Examples.ZeroCollateralLottery.ZCLRuns
+      Examples.ZeroCollateralLottery.ZCLStrategies
       Paths_bitml_strategy
   autogen-modules:
       Paths_bitml_strategy
@@ -70,6 +80,7 @@ test-suite bitml-strategy-test
       NewSetTest
       OperatorTest
       PredicateTests
+      RunTest
       Paths_bitml_strategy
   autogen-modules:
       Paths_bitml_strategy
