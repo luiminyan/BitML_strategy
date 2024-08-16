@@ -137,7 +137,7 @@ resolveID (VID toResolveId) env run =
                 if index <= length succIdList - 1 
                     then succIdList !! index
                     else error "resolveId: index out of range!"
-        Nothing -> error "resolveID: ID not found in environment!"
+        Nothing -> error $ "resolveID: ID not found in environment!" ++ show toResolveId
 
 
 
@@ -145,7 +145,7 @@ resolveID (VID toResolveId) env run =
 resolveLabelID :: Label ID -> Environment -> Run -> Label ConcID
 resolveLabelID label env run =
     case label of
-        LSplit labelId c               -> LSplit (resolveID labelId env run) c
+        LSplit labelId c                -> LSplit (resolveID labelId env run) c
         LAuthReveal p s                 -> LAuthReveal p s
         LPutReveal ds secs p labelId gc -> LPutReveal ds secs p (resolveID labelId env run) gc
         LWithdraw p m labelId           -> LWithdraw p m (resolveID labelId env run)
@@ -155,11 +155,11 @@ resolveLabelID label env run =
 
 
 {-  check if a label is executed in a run
+    LDelay: error, not allowed to use here
     init-run: false
 -}
 executedLabel :: Label ConcID -> Run -> Bool
 executedLabel label (Run (_, tuples)) = any (\(l, _, _) -> l == label) tuples
--- TODO: LDelay, alread in the run??
 
 
 
@@ -255,7 +255,7 @@ eval env (ExecutedThenElse label succList as1 as2) = \run ->
         LDelay _ -> error "eval ExecutedThenElse: LDelay cannot be applied here"
         _ -> let env' = updateAllSuccEnv label succList env in           -- (temp.) env': update env with label: (succ, index)
                 if executedLabel (resolveLabelID label env run) run     -- resolve id in a label 
-                    then eval env' as1 run                              -- label executed: update env
+                    then eval env' as1 run                              -- only label executed: update env
                     else eval env as2 run
 
 eval env (IfThenElse (BeforeTimeOut t) as1 as2) =            -- if before t then as1 else as2
