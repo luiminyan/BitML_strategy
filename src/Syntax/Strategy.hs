@@ -5,7 +5,7 @@ module Syntax.Strategy (
     , ConcreteStrategy
 ) where
     
-import Syntax.Common (Time(..), ID(..), VarID, ConcID, Pred, subTime)
+import Syntax.Common (Time(..), ID(..), VarID, ConcID, Pred)
 import Syntax.Label (Label)
 import Syntax.Run (Run(..))
 import NewSet 
