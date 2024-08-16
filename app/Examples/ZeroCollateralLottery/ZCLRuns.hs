@@ -6,7 +6,7 @@ module Examples.ZeroCollateralLottery.ZCLRuns (
     , zclRunPuta
     , zclRunWithdrawA
     , zclRunAfterD
-    , zclRunAftWithdrawA
+    , zclRunAftDWDrawA
 ) where
 
 import Examples.ZeroCollateralLottery.ZCLContract
@@ -39,22 +39,84 @@ zclRun0 :: Run
 zclRun0 = Run ([ActiveContract zclContract (BCoins 2) (ConcID "zcl")], [])
 
 zclRunRevb :: Run
-zclRunRevb = appendRun (LAuthReveal pb sec_b) [ActiveContract zclContract (BCoins 2) (ConcID "zcl"), RevealedSecret pb sec_b lenSecb] (Time 0) zclRun0
+zclRunRevb = 
+    appendRun 
+        (LAuthReveal pb sec_b) 
+        [
+            ActiveContract zclContract (BCoins 2) (ConcID "zcl")
+            , RevealedSecret pb sec_b lenSecb
+        ] 
+        (Time 0) 
+        zclRun0
+
 
 zclRunPutb :: Run
-zclRunPutb = appendRun (LPutReveal [] [sec_b] (PBtwn (EInt 0) (ELength sec_b) (EInt 1)) (ConcID "zcl") zclCAftRevb) [ActiveContract zclContract (BCoins 2) (ConcID "zcl-putb"), RevealedSecret pb sec_b lenSecb] (Time 0) zclRunRevb
+zclRunPutb = 
+    appendRun 
+        (LPutReveal [] [sec_b] (PBtwn (EInt 0) (ELength sec_b) (EInt 1)) (ConcID "zcl") zclCAftRevb) 
+        [
+            ActiveContract zclContract (BCoins 2) (ConcID "zcl-aftPutB")
+            , RevealedSecret pb sec_b lenSecb
+        ] 
+        (Time 0) 
+        zclRunRevb
+
 
 zclRunReva :: Run
-zclRunReva = appendRun (LAuthReveal pa sec_a) [ActiveContract zclCAftRevb (BCoins 2) (ConcID "zcl-putb"), RevealedSecret pb sec_b lenSecb, RevealedSecret pa sec_a lenSeca] (Time 0) zclRunPutb
+zclRunReva = 
+    appendRun 
+        (LAuthReveal pa sec_a) 
+        [
+            ActiveContract zclCAftRevb (BCoins 2) (ConcID "zcl-aftPutB")
+            , RevealedSecret pb sec_b lenSecb, RevealedSecret pa sec_a lenSeca
+        ] 
+        (Time 0) 
+        zclRunPutb
+
 
 zclRunPuta :: Run
-zclRunPuta = appendRun (LPutReveal [] [sec_a] (PEq (ELength sec_a) (ELength sec_b)) (ConcID "zcl-putb") [zclGRevaEq]) [ActiveContract [zclGWithdrawA] (BCoins 2) (ConcID "zcl-puta"), RevealedSecret pb sec_b lenSecb, RevealedSecret pa sec_a lenSeca] (Time 0) zclRunReva
+zclRunPuta = 
+    appendRun 
+        (LPutReveal [] [sec_a] (PEq (ELength sec_a) (ELength sec_b)) (ConcID "zcl-aftPutB") [zclGRevaEq]) 
+        [
+            ActiveContract [zclGWithdrawA] (BCoins 2) (ConcID "zcl-aftPutA")
+            , RevealedSecret pb sec_b lenSecb
+            , RevealedSecret pa sec_a lenSeca
+        ] 
+        (Time 0) 
+        zclRunReva
+
 
 zclRunWithdrawA :: Run
-zclRunWithdrawA = appendRun (LWithdraw pa (BCoins 2) (ConcID "zcl-puta")) [RevealedSecret pb sec_b lenSecb, RevealedSecret pa sec_a lenSeca, Deposit pa (BCoins 2) (ConcID "depo-pa-1")] (Time 0) zclRunPuta
+zclRunWithdrawA = 
+    appendRun 
+        (LWithdraw pa (BCoins 2) (ConcID "zcl-aftPutA")) 
+        [
+            RevealedSecret pb sec_b lenSecb
+            , RevealedSecret pa sec_a lenSeca
+            , Deposit pa (BCoins 2) (ConcID "depo-pa-1")
+        ] 
+        (Time 0) 
+        zclRunPuta
+
 
 zclRunAfterD :: Run
-zclRunAfterD = appendRun (LDelay timeD) [ActiveContract zclContract (BCoins 2) (ConcID "zcl")] timeD zclRun0
+zclRunAfterD = 
+    appendRun 
+        (LDelay timeD) 
+        [
+            ActiveContract zclContract (BCoins 2) (ConcID "zcl")
+        ] 
+        timeD 
+        zclRun0
 
-zclRunAftWithdrawA :: Run
-zclRunAftWithdrawA = appendRun (LWithdraw pa (BCoins 2) (ConcID "zcl")) [Deposit pa (BCoins 2) (ConcID "depo-pa-1*")] timeD zclRunAfterD
+
+zclRunAftDWDrawA :: Run
+zclRunAftDWDrawA = 
+    appendRun 
+        (LWithdraw pa (BCoins 2) (ConcID "zcl")) 
+        [
+            Deposit pa (BCoins 2) (ConcID "depo-pa-1*")
+        ] 
+        timeD 
+        zclRunAfterD
