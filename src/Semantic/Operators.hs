@@ -229,14 +229,20 @@ eval env (Do label) = \run ->
         LDelay time -> Delay time
         _           -> Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
 
-eval _ DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+-- eval _ DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+
+eval env DoNothing = \run ->
+    let minTime = minTimeRun run in
+        eval env (WaitUntil minTime) run
 
 eval _ (WaitUntil (Time d)) =
     \run -> let now = getCurrentTime run in
         if now < Time d 
             then Delay $ subTime (Time d) now
-            else error "Invalid strategy: time to wait already past"
+            else Delay TerminationTime          -- wait for a time in the past: Delay Termination
 eval _ (WaitUntil TerminationTime) = \_ -> Delay TerminationTime
+
+
 
 eval env (Combination as1 as2) = \run ->
     let cs1 = eval env as1 in               -- as1 and as2 are parallel evaluated
