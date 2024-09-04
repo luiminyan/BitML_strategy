@@ -2,7 +2,7 @@ module Examples.TimedCommitment.TCRuns (
     run_tc_0
     , runTCReva
     , runTCPuta
-    , runTCWithdrawB
+    , runTCDelayT
 ) where
 
 import Syntax.Run
@@ -21,8 +21,10 @@ runTCReva = appendRun (LAuthReveal (Participant "A") (Secret "a")) [ActiveContra
 
 
 runTCPuta :: Run
-runTCPuta = appendRun (LPutReveal [] [Secret "a"] PTrue (ConcID "tc") [Withdraw (Participant "A")]) [ActiveContract [Withdraw (Participant "A")] (BCoins 1) (ConcID "x"), RevealedSecret (Participant "A") (Secret "a") 10] (Time 0) runTCReva
+runTCPuta = appendRun (LPutReveal [] [Secret "a"] PTrue (ConcID "tc") [Withdraw (Participant "A")]) [ActiveContract [Withdraw (Participant "A")] (BCoins 1) (ConcID "tc-aftPutA"), RevealedSecret (Participant "A") (Secret "a") 10] (Time 0) runTCReva
 
 
-runTCWithdrawB :: Run
-runTCWithdrawB = Run ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], [(LDelay (Time 2), [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], Time 2)])
+runTCDelayT :: Run
+runTCDelayT = Run ([ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], [(LDelay (Time 2), [ActiveContract contractTimedCommitment (BCoins 1) (ConcID "tc")], Time 2)])
+
+
