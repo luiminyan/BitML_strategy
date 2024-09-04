@@ -5,29 +5,21 @@ module Examples.ZeroCollateralLottery.ZCLRuns (
     , zclRunReva
     , zclRunPuta
     , zclRunWithdrawA
+    , zclRunPutANeq
+    , zclRunWithdrawB
     , zclRunAfterD
     , zclRunAftDWDrawA
+    , zclRunAfterD'
+    , zclRunAftD'RevB
+    , zclRunAftD'PutB
+    , zclRunAftD'WDrawB
 ) where
 
 import Examples.ZeroCollateralLottery.ZCLContract
 import Syntax.Run
 import Syntax.Common
 import Syntax.Label
-import Syntax.Common (Secret(Secret))
-import Syntax.Contract (GuardedContract(Withdraw))
 
-
--- pa :: Participant
--- pa = Participant "PA"
-
--- pb :: Participant
--- pb = Participant "PB"
-
--- sec_a :: Secret
--- sec_a = Secret "a"
-
--- sec_b :: Secret
--- sec_b = Secret "b"
 
 lenSeca :: Int
 lenSeca = 1
@@ -77,7 +69,7 @@ zclRunReva =
 zclRunPuta :: Run
 zclRunPuta = 
     appendRun 
-        (LPutReveal [] [sec_a] (PEq (ELength sec_a) (ELength sec_b)) (ConcID "zcl-aftPutB") [zclGRevaEq]) 
+        (LPutReveal [] [sec_a] (PEq (ELength sec_a) (ELength sec_b)) (ConcID "zcl-aftPutB") [zclGWithdrawA]) 
         [
             ActiveContract [zclGWithdrawA] (BCoins 2) (ConcID "zcl-aftPutA")
             , RevealedSecret pb sec_b lenSecb
@@ -99,6 +91,29 @@ zclRunWithdrawA =
         (Time 0) 
         zclRunPuta
 
+zclRunPutANeq :: Run
+zclRunPutANeq = 
+    appendRun 
+        (LPutReveal [] [sec_a] (PNeq (ELength sec_a) (ELength sec_b)) (ConcID "zcl-aftPutB") [zclGWithdrawB]) 
+        [
+            ActiveContract [zclGWithdrawB] (BCoins 2) (ConcID "zcl-aftPutANeq")
+            , RevealedSecret pb sec_b lenSecb
+            , RevealedSecret pa sec_a lenSeca
+        ] 
+        (Time 0) 
+        zclRunReva
+
+zclRunWithdrawB :: Run
+zclRunWithdrawB = 
+    appendRun 
+        (LWithdraw pb (BCoins 2) (ConcID "zcl-aftPutANeq")) 
+        [
+            ActiveContract [zclGWithdrawB] (BCoins 2) (ConcID "depo-pb-1")
+            , RevealedSecret pb sec_b lenSecb
+            , RevealedSecret pa sec_a lenSeca
+        ] 
+        (Time 0) 
+        zclRunPutANeq
 
 zclRunAfterD :: Run
 zclRunAfterD = 
@@ -120,3 +135,46 @@ zclRunAftDWDrawA =
         ] 
         timeD 
         zclRunAfterD
+
+zclRunAfterD' :: Run
+zclRunAfterD' = 
+    appendRun 
+        (LDelay timeD') 
+        [
+            ActiveContract zclContract (BCoins 2) (ConcID "zcl")
+        ] 
+        timeD' 
+        zclRun0
+
+zclRunAftD'RevB :: Run
+zclRunAftD'RevB = 
+    appendRun 
+        (LAuthReveal pb sec_b) 
+        [
+            ActiveContract zclContract (BCoins 2) (ConcID "zcl")
+            , RevealedSecret pb sec_b lenSecb
+        ] 
+        timeD' 
+        zclRunAfterD'
+
+zclRunAftD'PutB :: Run
+zclRunAftD'PutB = 
+    appendRun 
+        (LPutReveal [] [sec_b] (PBtwn (EInt 0) (ELength sec_b) (EInt 1)) (ConcID "zcl") zclCAftRevb) 
+        [
+            ActiveContract zclCAftRevb (BCoins 2) (ConcID "zcl-aftDPutB")
+            , RevealedSecret pb sec_b lenSecb
+        ] 
+        timeD' 
+        zclRunAftD'RevB
+
+zclRunAftD'WDrawB :: Run
+zclRunAftD'WDrawB = 
+    appendRun 
+        (LWithdraw pb (BCoins 2) (ConcID "zcl-aftDPutB")) 
+        [
+            Deposit pb (BCoins 2) (ConcID "depo-pb-1*")
+            , RevealedSecret pb sec_b lenSecb
+        ] 
+        timeD' 
+        zclRunAftD'PutB
