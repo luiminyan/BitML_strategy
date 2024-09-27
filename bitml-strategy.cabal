@@ -78,7 +78,6 @@ test-suite bitml-strategy-test
   main-is: Spec.hs
   other-modules:
       OperatorTest
-      PredicateTests
       RunTest
       Paths_bitml_strategy
   autogen-modules:
