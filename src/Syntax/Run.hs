@@ -10,9 +10,10 @@ module Syntax.Run (
     , transformRun
     , searchTransRun
     , appendRun
+    , lastConfig
 ) where
 import Syntax.Label (Label)
-import Syntax.Common ( Secret, Money, Participant, ConcID, Time(..) )
+import Syntax.Common ( Secret, Money, Participant, ID, ConcID, Time(..) )
 import Syntax.Contract (Contract, GuardedContract)
 import Data.List (find)
 
@@ -21,7 +22,7 @@ data ConfigObject =
     ActiveContract Contract Money ConcID
     | Deposit Participant Money ConcID
     | AuthTakeBranch Participant ConcID GuardedContract     -- Authorization
-    | SecretCommit Participant Secret
+    -- | SecretCommit Participant Secret
     | RevealedSecret Participant Secret Int
     deriving (Eq, Show)
 
@@ -62,3 +63,12 @@ searchTransRun label transRun = fmap snd (find (\(l, _) -> label == l) transRun)
 -}
 appendRun :: Label ConcID -> Configuration -> Time -> Run -> Run
 appendRun label configuration time (Run (initConfig, tupulList)) = Run (initConfig, tupulList ++ [(label, configuration, time)])
+
+{- return the last configuration -}
+lastConfig :: Run -> Configuration
+lastConfig (Run (initConf, [])) = initConf
+lastConfig (Run (_, [(_, confList, _)])) = confList
+lastConfig (Run (initConf, _:xs)) =  lastConfig (Run (initConf, xs))  
+
+
+

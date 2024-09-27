@@ -24,6 +24,19 @@ import Semantic.Environment
 import qualified Data.Map as Map
 
 
+-- if a label is excutable: ID exist in the last configuration 
+executable :: Label ConcID -> Run -> Bool
+executable label run =
+    case label of
+        LSplit lid _             -> lid `elem` activeContractsIDs                             
+        LPutReveal _ _ _ lid _   -> lid `elem` activeContractsIDs
+        LWithdraw _ _ lid        -> lid `elem` activeContractsIDs
+        LAuthControl _ lid _     -> lid `elem` activeContractsIDs
+        _ -> True               
+    where activeContractsIDs = [labelId | (ActiveContract _ _ labelId) <- lastConfig run]
+
+
+
 -- greedyCombination of two Strategy Result Actions list
 greedyActionsCombination :: Eq id => NewSet (Label id) -> NewSet (Label id) -> NewSet (Label id)
 greedyActionsCombination s1 s2 =
@@ -227,9 +240,12 @@ eval :: Environment -> AbstractStrategy -> ConcreteStrategy
 eval env (Do label) = \run ->
     case label of
         LDelay time -> Delay time
-        _           -> Actions $ UnordSet [resolveLabelID label env run]       -- resolve id in the label
-
--- eval _ DoNothing = Delay . minTimeRun         -- DoNothing = delay minimum time from active contract(s) in run | termination-time
+        _           -> 
+            let resolvedLabel = resolveLabelID label env run in
+                if executable resolvedLabel run
+                    then Actions $ UnordSet [resolvedLabel]       -- resolve id in the label
+                    -- else error $ "eval: " ++ show label ++ " is not executable!"
+                    else eval env DoNothing run
 
 eval env DoNothing = \run ->
     let minTime = minTimeRun run in
@@ -241,7 +257,6 @@ eval _ (WaitUntil (Time d)) =
             then Delay $ subTime (Time d) now
             else Delay TerminationTime          -- wait for a time in the past: Delay Termination
 eval _ (WaitUntil TerminationTime) = \_ -> Delay TerminationTime
-
 
 
 eval env (Combination as1 as2) = \run ->
